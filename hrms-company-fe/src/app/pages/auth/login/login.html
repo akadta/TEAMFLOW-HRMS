@@ -1,0 +1,182 @@
+<div
+  class="relative flex h-full w-full items-center justify-center overflow-hidden px-4"
+  [style]="brand.frame()"
+  [style.--accent]="brand.theme().accent">
+
+  <div class="pattern-grid pointer-events-none absolute inset-0"></div>
+
+  <!-- Floating tiles (same look as the company's navbar/cards) -->
+  @for (t of tiles; track $index) {
+    <div
+      class="pointer-events-none absolute hidden items-center justify-center rounded-2xl md:flex"
+      [class]="t.cls"
+      [style]="brand.navbarStyle()"
+      [style.color]="brand.theme().accent">
+      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="t.d" />
+      </svg>
+    </div>
+  }
+
+  <!-- Card -->
+  <div
+    class="relative w-full max-w-md overflow-hidden rounded-3xl"
+    [style]="brand.navbarStyle()"
+    [style.color]="brand.navbarText()">
+
+    <div class="px-8 py-9 sm:px-10">
+      <!-- Logo / heading -->
+      <div class="flex flex-col items-center text-center">
+        @if (brand.logoUrl(); as logo) {
+          <div class="grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-white p-1.5 shadow-lg ring-4 ring-white/50">
+            <img [src]="logo" alt="" class="h-full w-full object-contain" />
+          </div>
+        } @else if (brand.brand()) {
+          <div
+            class="grid h-16 w-16 place-items-center rounded-2xl text-2xl font-bold shadow-lg ring-4 ring-white/50"
+            [style.background]="brand.theme().accent"
+            [style.color]="brand.accentText()">
+            {{ brand.initial() }}
+          </div>
+        } @else {
+          <div
+            class="grid h-14 w-14 place-items-center rounded-2xl shadow-lg ring-4 ring-white/50"
+            [style.background]="brand.theme().accent"
+            [style.color]="brand.accentText()">
+            <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+              <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="tiles[0].d" />
+            </svg>
+          </div>
+        }
+
+        @if (brand.name()) {
+          <p class="mt-4 text-sm font-medium opacity-70">{{ brand.name() }}</p>
+        }
+        <h1 class="mt-2 text-2xl font-semibold tracking-tight">Sign in</h1>
+        <p class="mt-1 text-sm opacity-70">Enter your credentials to continue</p>
+      </div>
+
+      @if (errorMessage()) {
+        <div class="mt-6 flex items-start gap-2.5 rounded-xl border border-red-200/80 bg-red-50 px-3.5 py-3 text-sm text-red-700">
+          <svg class="mt-0.5 h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd"
+              d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-8-4a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0 8a1 1 0 100-2 1 1 0 000 2z"
+              clip-rule="evenodd" />
+          </svg>
+          <span>{{ errorMessage() }}</span>
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="mt-7 space-y-5" novalidate>
+        <!-- Email -->
+        <div>
+          <label for="email" class="mb-1.5 block text-sm font-medium">Email</label>
+          <div class="relative">
+            <span class="field-icon pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+              </svg>
+            </span>
+            <input
+              id="email"
+              type="email"
+              formControlName="email"
+              autocomplete="username"
+              class="glass-input block w-full rounded-xl py-2.5 pl-11 pr-3.5 text-sm text-slate-900 outline-none transition" />
+          </div>
+          @if (email.touched && email.errors) {
+            <p class="mt-1.5 text-xs text-red-500">
+              @if (email.errors['required']) {
+                Email is required.
+              } @else if (email.errors['email']) {
+                Enter a valid email address.
+              }
+            </p>
+          }
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label for="password" class="mb-1.5 block text-sm font-medium">Password</label>
+          <div class="relative">
+            <span class="field-icon pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+            </span>
+            <input
+              id="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="password"
+              autocomplete="current-password"
+              class="glass-input block w-full rounded-xl py-2.5 pl-11 pr-11 text-sm text-slate-900 outline-none transition" />
+            <button
+              type="button"
+              (click)="togglePassword()"
+              class="field-btn absolute inset-y-0 right-0 flex items-center pr-3.5 transition"
+              [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'">
+              @if (showPassword()) {
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                </svg>
+              } @else {
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              }
+            </button>
+          </div>
+          @if (password.touched && password.errors) {
+            <p class="mt-1.5 text-xs text-red-500">
+              @if (password.errors['required']) {
+                Password is required.
+              } @else if (password.errors['minlength']) {
+                Password must be at least 6 characters.
+              }
+            </p>
+          }
+        </div>
+
+        <!-- Remember / forgot -->
+        <div class="flex items-center justify-between">
+          <label class="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              formControlName="remember"
+              class="h-4 w-4 rounded"
+              [style.accent-color]="brand.theme().accent" />
+            Remember me
+          </label>
+          <a href="#" class="text-sm font-medium underline-offset-2 hover:underline">Forgot password?</a>
+        </div>
+
+        <!-- Submit -->
+        <button
+          type="submit"
+          [disabled]="loading()"
+          class="group flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition hover:brightness-110 focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
+          [style.background]="brand.theme().accent"
+          [style.color]="brand.accentText()"
+          [style.box-shadow]="'0 12px 28px -10px ' + brand.theme().accent">
+          @if (loading()) {
+            <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+            Signing in...
+          } @else {
+            Sign in
+            <svg class="h-4 w-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+          }
+        </button>
+      </form>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,70 @@
+<div class="mx-auto max-w-6xl p-3 sm:p-4"
+     [style.--accent]="brand.theme().accent"
+     [style.--accent-text]="brand.accentText()"
+     [style.--card]="brand.theme().navbar">
+
+  <div class="flex flex-wrap items-end gap-2">
+    <div class="mr-auto">
+      <h1 class="text-lg font-semibold tracking-tight" [style.color]="brand.contentText()">Check-in report</h1>
+      <p class="text-xs opacity-70" [style.color]="brand.contentText()">Periodic check-ins of people who were present · {{ filtered().length }} rows · IST</p>
+    </div>
+    <input class="inp" type="date" [value]="from()" (change)="from.set(val($event)); load()" />
+    <input class="inp" type="date" [value]="to()" (change)="to.set(val($event)); load()" />
+  </div>
+
+  @if (error()) {
+    <div class="mt-2 rounded-lg px-3 py-2 text-xs" style="background:#fef2f2;color:#dc2626;border:1px solid #fca5a5">{{ error() }}</div>
+  }
+
+  <section class="mt-3 rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+    <div class="flex flex-wrap gap-1.5">
+      @for (c of chips; track c) {
+        <button type="button" class="chip" [class.on]="status() === c" (click)="status.set(c)">
+          {{ label[c] }} <span class="ml-1 opacity-70">{{ counts()[c] || 0 }}</span>
+        </button>
+      }
+    </div>
+
+    <div class="mt-2.5 flex flex-wrap items-center gap-2">
+      <input class="inp w-48" placeholder="Search name / code" [value]="search()" (input)="search.set(val($event))" />
+      <select class="inp" (change)="role.set(val($event))">
+        <option value="">All roles</option>
+        @for (r of roles(); track r) { <option [value]="r" [selected]="r === role()">{{ r }}</option> }
+      </select>
+      <button type="button" class="act" (click)="reset()">Reset</button>
+    </div>
+
+    <div class="line mt-2.5 max-h-[calc(100vh-20rem)] overflow-auto rounded-lg border">
+      <table class="tbl w-full min-w-[760px] text-left text-xs">
+        <thead><tr><th>Date</th><th>Employee</th><th>Role</th><th>Window</th><th>Status</th><th>Checked in at</th><th>Location</th></tr></thead>
+        <tbody>
+          @for (r of pageRows(); track r.date + r.userId + r.from) {
+            <tr>
+              <td class="whitespace-nowrap">{{ dayLabel(r.date) }}</td>
+              <td><p class="font-semibold">{{ r.name }}</p><p class="text-[11px] opacity-70">{{ r.code }}</p></td>
+              <td>{{ r.role ?? '—' }}</td>
+              <td class="whitespace-nowrap">{{ hhmm(r.from) }} – {{ hhmm(r.to) }}</td>
+              <td><span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="cls[r.status]">{{ label[r.status] }}</span></td>
+              <td class="whitespace-nowrap">{{ r.at ? t12(r.at) : '—' }}</td>
+              <td>
+                @if (r.lat !== null && r.lng !== null) {
+                  <a class="act" [href]="'https://www.google.com/maps?q=' + r.lat + ',' + r.lng" target="_blank" rel="noopener">Map</a>
+                } @else { <span class="opacity-50">—</span> }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="py-8 text-center opacity-70">{{ loading() ? 'Loading…' : 'No check-ins.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-2.5 flex items-center justify-between text-xs">
+      <span>Page {{ cur() + 1 }} / {{ pages() }}</span>
+      <div class="flex gap-1.5">
+        <button type="button" class="act" [disabled]="cur() === 0" (click)="page.set(cur() - 1)">Prev</button>
+        <button type="button" class="act" [disabled]="cur() >= pages() - 1" (click)="page.set(cur() + 1)">Next</button>
+      </div>
+    </div>
+  </section>
+</div>

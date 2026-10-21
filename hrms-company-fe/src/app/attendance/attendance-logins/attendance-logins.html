@@ -1,0 +1,56 @@
+<div class="mx-auto max-w-6xl p-3 sm:p-4"
+     [style.--accent]="brand.theme().accent"
+     [style.--accent-text]="brand.accentText()"
+     [style.--card]="brand.theme().navbar">
+
+  <div class="flex flex-wrap items-end gap-2">
+    <div class="mr-auto">
+      <h1 class="text-lg font-semibold tracking-tight" [style.color]="brand.contentText()">Login locations</h1>
+      <p class="text-xs opacity-70" [style.color]="brand.contentText()">Location captured every time your people signed in · {{ filtered().length }} rows · IST</p>
+    </div>
+    <input class="inp" type="date" [value]="from()" (change)="from.set(val($event)); load()" />
+    <input class="inp" type="date" [value]="to()" (change)="to.set(val($event)); load()" />
+  </div>
+
+  @if (error()) {
+    <div class="mt-2 rounded-lg px-3 py-2 text-xs" style="background:#fef2f2;color:#dc2626;border:1px solid #fca5a5">{{ error() }}</div>
+  }
+
+  <section class="mt-3 rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+    <div class="flex flex-wrap items-center gap-2">
+      <input class="inp w-48" placeholder="Search name / code" [value]="search()" (input)="search.set(val($event))" />
+      <select class="inp" (change)="role.set(val($event))">
+        <option value="">All roles</option>
+        @for (r of roles(); track r) { <option [value]="r" [selected]="r === role()">{{ r }}</option> }
+      </select>
+      <button type="button" class="act" (click)="reset()">Reset</button>
+    </div>
+
+    <div class="line mt-2.5 max-h-[calc(100vh-19rem)] overflow-auto rounded-lg border">
+      <table class="tbl w-full min-w-[620px] text-left text-xs">
+        <thead><tr><th>Signed in at</th><th>Employee</th><th>Role</th><th>Location</th><th>Accuracy</th></tr></thead>
+        <tbody>
+          @for (r of pageRows(); track r.at + r.userId) {
+            <tr>
+              <td class="whitespace-nowrap">{{ dt12(r.at) }}</td>
+              <td><p class="font-semibold">{{ r.name }}</p><p class="text-[11px] opacity-70">{{ r.code }}</p></td>
+              <td>{{ r.role ?? '—' }}</td>
+              <td><a class="act" [href]="mapUrl(r.lat, r.lng)" target="_blank" rel="noopener">Map</a></td>
+              <td>{{ r.accuracy !== null ? '±' + (r.accuracy | number: '1.0-0') + ' m' : '—' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="py-8 text-center opacity-70">{{ loading() ? 'Loading…' : 'No captured logins.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-2.5 flex items-center justify-between text-xs">
+      <span>Page {{ cur() + 1 }} / {{ pages() }}</span>
+      <div class="flex gap-1.5">
+        <button type="button" class="act" [disabled]="cur() === 0" (click)="page.set(cur() - 1)">Prev</button>
+        <button type="button" class="act" [disabled]="cur() >= pages() - 1" (click)="page.set(cur() + 1)">Next</button>
+      </div>
+    </div>
+  </section>
+</div>

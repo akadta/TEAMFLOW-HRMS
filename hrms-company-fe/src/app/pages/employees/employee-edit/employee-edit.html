@@ -1,0 +1,374 @@
+@let f = form();
+<div class="mx-auto max-w-4xl p-3 sm:p-4"
+     [style.--accent]="brand.theme().accent"
+     [style.--accent-text]="brand.accentText()"
+     [style.--txt]="brand.navbarText()">
+
+  <div class="flex items-end justify-between gap-2">
+    <div>
+      <h1 class="text-lg font-semibold tracking-tight" [style.color]="brand.contentText()">Edit employee</h1>
+      @if (!loading() && !loadError()) {
+        <p class="text-xs opacity-70" [style.color]="brand.contentText()">{{ f.employeeCode }}</p>
+      }
+    </div>
+    <a routerLink="/employee/list" class="btn shrink-0" style="text-decoration:none">← Back</a>
+  </div>
+
+  @if (loading()) {
+    <div class="mt-3 h-64 animate-pulse rounded-xl bg-slate-200/60"></div>
+  } @else if (loadError()) {
+    <div class="mt-3 rounded-lg px-3 py-2 text-xs" style="background:#fef2f2;color:#dc2626;border:1px solid #fca5a5">{{ loadError() }}</div>
+  } @else {
+    <section class="mt-3 overflow-hidden rounded-xl" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+
+      <!-- Tabs -->
+      <div class="line flex gap-1 overflow-x-auto border-b px-3 pt-1">
+        @for (t of tabs; track t.id) {
+          <button type="button" class="tabbtn" [class.on]="tab() === t.id" (click)="tab.set(t.id)">{{ t.label }}</button>
+        }
+      </div>
+
+      <div class="max-h-[calc(100vh-17rem)] overflow-y-auto p-4">
+        @switch (tab()) {
+
+          <!-- BASIC -->
+          @case ('basic') {
+            <h3 class="sec">Basic information</h3>
+            <div class="grid2">
+              <div class="full">
+                <label class="lbl">Employee ID <span class="req">*</span><i>editable</i></label>
+                <div class="flex gap-2">
+                  <input class="inp" maxlength="30" placeholder="EMP-001A" [value]="f.employeeCode"
+                         (input)="set('employeeCode', upper($event, 30, true))" />
+                  <button type="button" class="ghost" (click)="autoCode()">Auto</button>
+                </div>
+              </div>
+              <div class="full">
+                <label class="lbl">Full name <span class="req">*</span></label>
+                <input class="inp" maxlength="100" placeholder="Enter full name" [value]="f.name" (input)="set('name', val($event))" />
+              </div>
+              <div>
+                <label class="lbl">Email <span class="req">*</span></label>
+                <input class="inp" type="email" maxlength="150" placeholder="Login email" [value]="f.email" (input)="set('email', val($event))" />
+              </div>
+              <div>
+                <label class="lbl">Phone number <span class="req">*</span></label>
+                <input class="inp" inputmode="numeric" placeholder="10-digit phone number" [value]="f.phoneNumber" (input)="set('phoneNumber', digits($event, 10))" />
+              </div>
+              <div>
+                <label class="lbl">Emergency number <i>(optional)</i></label>
+                <input class="inp" inputmode="numeric" placeholder="10-digit emergency number" [value]="f.emergencyNumber" (input)="set('emergencyNumber', digits($event, 10))" />
+              </div>
+              <div>
+                <label class="lbl">Official mail <i>(optional)</i></label>
+                <input class="inp" type="email" maxlength="150" placeholder="Official email" [value]="f.officialEmail" (input)="set('officialEmail', val($event))" />
+              </div>
+            </div>
+          }
+
+          <!-- PERSONAL -->
+          @case ('personal') {
+            <h3 class="sec">Personal details</h3>
+            <div class="grid2">
+              <div>
+                <label class="lbl">Date of birth <i>(optional)</i></label>
+                <input class="inp" type="date" [value]="f.dateOfBirth" (input)="set('dateOfBirth', val($event))" />
+              </div>
+              <div>
+                <label class="lbl">Gender <i>(optional)</i></label>
+                <select class="inp" (change)="set('gender', val($event))">
+                  <option value="">Select gender</option>
+                  @for (o of genders; track o) { <option [value]="o" [selected]="o === f.gender">{{ o }}</option> }
+                </select>
+              </div>
+              <div>
+                <label class="lbl">Blood group <i>(optional)</i></label>
+                <select class="inp" (change)="set('bloodGroup', val($event))">
+                  <option value="">Select blood group</option>
+                  @for (o of bloodGroups; track o) { <option [value]="o" [selected]="o === f.bloodGroup">{{ o }}</option> }
+                </select>
+              </div>
+              <div>
+                <label class="lbl">Marital status <i>(optional)</i></label>
+                <select class="inp" (change)="set('maritalStatus', val($event))">
+                  <option value="">Select status</option>
+                  @for (o of maritals; track o) { <option [value]="o" [selected]="o === f.maritalStatus">{{ o }}</option> }
+                </select>
+              </div>
+              <div>
+                <label class="lbl">Nationality <i>(optional)</i></label>
+                <input class="inp" maxlength="50" placeholder="e.g. Indian" [value]="f.nationality" (input)="set('nationality', val($event))" />
+              </div>
+              <div>
+                <label class="lbl">Aadhar number <i>(optional)</i></label>
+                <input class="inp" inputmode="numeric" placeholder="12-digit Aadhar number" [value]="f.aadharNumber" (input)="set('aadharNumber', digits($event, 12))" />
+              </div>
+              <div class="full">
+                <label class="lbl">PAN number <i>(optional)</i></label>
+                <input class="inp" placeholder="AAAPA0000A" [value]="f.panNumber" (input)="set('panNumber', upper($event, 10))" />
+              </div>
+              <div class="full">
+                <label class="lbl">Address <i>(optional)</i></label>
+                <textarea class="inp" maxlength="500" placeholder="Complete residential address" [value]="f.address" (input)="set('address', val($event))"></textarea>
+              </div>
+              <div class="full">
+                <label class="lbl">Profile picture <i>(optional · image, max 3 MB)</i></label>
+                <div class="flex items-center gap-3">
+                  @if (avatarSrc()) {
+                    <img class="avatar" [src]="avatarSrc()" alt="Profile preview" />
+                  } @else {
+                    <div class="avatar flex items-center justify-center text-slate-300">
+                      <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                    </div>
+                  }
+                  <input #pf class="inp" type="file" accept="image/*" (change)="onProfile($event)" />
+                  @if (avatarSrc()) {
+                    <button type="button" class="del shrink-0" (click)="clearProfile(pf)">Remove</button>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- PROFESSIONAL -->
+          @case ('professional') {
+            <h3 class="sec">Professional details</h3>
+            <div class="grid2">
+              <div class="full">
+                <label class="lbl">Highest qualification <i>(optional)</i></label>
+                <input class="inp" maxlength="100" placeholder="e.g. Bachelor, Master, PhD" [value]="f.highestQualification" (input)="set('highestQualification', val($event))" />
+              </div>
+              <div>
+                <label class="lbl">Institution <i>(optional)</i></label>
+                <input class="inp" maxlength="150" placeholder="Name of institute/university" [value]="f.institution" (input)="set('institution', val($event))" />
+              </div>
+              <div>
+                <label class="lbl">Year of passing <i>(optional)</i></label>
+                <input class="inp" inputmode="numeric" placeholder="e.g. 2020" [value]="f.yearOfPassing" (input)="set('yearOfPassing', digits($event, 4))" />
+              </div>
+            </div>
+
+            <h3 class="sec mt-5">Certificates, achievements &amp; research <span class="ml-1 text-[11px] font-normal opacity-70">({{ docs().length }} added)</span></h3>
+            <div class="box">
+              <div class="grid2">
+                <div>
+                  <label class="lbl">Type</label>
+                  <select class="inp" (change)="setD('type', val($event))">
+                    @for (o of docTypes; track o) { <option [selected]="o === dDraft().type">{{ o }}</option> }
+                  </select>
+                </div>
+                <div>
+                  <label class="lbl">Title <span class="req">*</span></label>
+                  <input class="inp" maxlength="150" placeholder="e.g. AWS Solutions Architect" [value]="dDraft().title" (input)="setD('title', val($event))" />
+                </div>
+                <div class="full">
+                  <label class="lbl">Description <i>(optional)</i></label>
+                  <input class="inp" maxlength="500" placeholder="Short note" [value]="dDraft().description" (input)="setD('description', val($event))" />
+                </div>
+                <div class="full">
+                  <label class="lbl">File <i>(optional · PDF, image, DOC · max 8 MB)</i></label>
+                  @if (dDraft().existingPath && !dDraft().removeFile) {
+                    <p class="mb-1 text-[11px]">
+                      Current file:
+                      <a [href]="url(dDraft().existingPath)" target="_blank" rel="noopener" class="font-semibold underline">Open</a>
+                      ·
+                      <button type="button" class="font-semibold underline" style="color:#ef4444" (click)="setD('removeFile', true)">Remove</button>
+                      <span class="opacity-60"> (choose a file below to replace)</span>
+                    </p>
+                  }
+                  @if (dDraft().removeFile) {
+                    <p class="mb-1 text-[11px]" style="color:#ef4444">
+                      Current file will be removed.
+                      <button type="button" class="font-semibold underline" (click)="setD('removeFile', false)">Undo</button>
+                    </p>
+                  }
+                  <input #df class="inp" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="onDocFile($event)" />
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button type="button" class="btn" (click)="addDoc(df)">{{ editingDoc() !== null ? 'Update' : '+ Add' }}</button>
+                @if (editingDoc() !== null) {
+                  <button type="button" class="ghost" (click)="cancelDoc(df)">Cancel</button>
+                }
+              </div>
+            </div>
+
+            @for (d of docs(); track d.uid) {
+              <div class="row">
+                <span class="chip">{{ d.type }}</span>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-xs font-semibold">{{ d.title }}</p>
+                  <p class="truncate text-[11px] opacity-70">{{ docFileLabel(d) }}</p>
+                </div>
+                <button type="button" class="ghost" (click)="editDoc(d)">Edit</button>
+                <button type="button" class="del" (click)="removeDoc(d.uid)">Remove</button>
+              </div>
+            }
+          }
+
+          <!-- DESIGNATION -->
+          @case ('designation') {
+            <h3 class="sec">Designation</h3>
+            <div class="grid2">
+              <div class="full">
+                <label class="lbl">Company role <i>(optional)</i></label>
+                <select class="inp" (change)="set('companyRoleId', val($event))">
+                  <option value="">Select role</option>
+                  @for (r of roles(); track r.id) {
+                    <option [value]="r.id" [selected]="'' + r.id === f.companyRoleId">{{ r.name }}{{ r.isActive ? '' : ' (inactive)' }}</option>
+                  }
+                </select>
+              </div>
+              <div class="full">
+                <label class="lbl">Work type <i>(optional)</i></label>
+                <div class="grid grid-cols-3 gap-2">
+                  @for (w of workTypes; track w.id) {
+                    <button type="button" class="wt" [class.on]="f.workType === w.id" (click)="set('workType', f.workType === w.id ? '' : w.id)">
+                      @switch (w.id) {
+                        @case ('office') {
+                          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v17M14 9h5a1 1 0 0 1 1 1v11M2 21h20M8 7h2M8 11h2M8 15h2M17 13h1M17 17h1"/></svg>
+                        }
+                        @case ('remote') {
+                          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5M5.5 10v10h13V10M10 20v-5h4v5"/></svg>
+                        }
+                        @default {
+                          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14m0 0-3.5-3.5M18 8l-3.5 3.5M20 16H6m0 0 3.5-3.5M6 16l3.5 3.5"/></svg>
+                        }
+                      }
+                      <span>{{ w.label }}</span>
+                    </button>
+                  }
+                </div>
+              </div>
+                          <div class="full">
+              <div class="flex items-center justify-between">
+                <label class="lbl">Reporting managers <i>(optional · employees of your company)</i></label>
+                <button type="button" class="ghost" (click)="pickerOpen.set(true)">+ Add manager</button>
+              </div>
+
+              @if (managers().length === 0) {
+                <p class="line rounded-lg border border-dashed px-3 py-2 text-[11px] opacity-80">
+                  The company owner is always the manager automatically. Add employees as extra managers if needed.
+                </p>
+              }
+
+              @for (m of managers(); track m.userId) {
+                <div class="row">
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-xs font-semibold">{{ m.name }}</p>
+                    <p class="truncate text-[11px] opacity-70">{{ m.code }}{{ m.role ? ' · ' + m.role : '' }}</p>
+                  </div>
+                  <button type="button" class="del" (click)="removeManager(m.userId)">Remove</button>
+                </div>
+              }
+            </div>
+            </div>
+          }
+
+          <!-- HISTORY -->
+          @case ('history') {
+            <h3 class="sec">Employment history <span class="ml-1 text-[11px] font-normal opacity-70">({{ hist().length }} added)</span></h3>
+            <div class="box">
+              <div class="grid2">
+                <div>
+                  <label class="lbl">Previous employer <span class="req">*</span></label>
+                  <input class="inp" maxlength="150" placeholder="e.g. Acme Corporation" [value]="hDraft().employer" (input)="setH('employer', val($event))" />
+                </div>
+                <div>
+                  <label class="lbl">Reason for leaving</label>
+                  <select class="inp" (change)="setH('reason', val($event))">
+                    <option value="">Select a reason</option>
+                    @for (o of reasons; track o) { <option [value]="o" [selected]="o === hDraft().reason">{{ o }}</option> }
+                  </select>
+                </div>
+                <div>
+                  <label class="lbl">Start date</label>
+                  <input class="inp" type="date" [value]="hDraft().startDate" (input)="setH('startDate', val($event))" />
+                </div>
+                <div>
+                  <label class="lbl">End date</label>
+                  <input class="inp" type="date" [value]="hDraft().endDate" (input)="setH('endDate', val($event))" />
+                </div>
+                <div class="full">
+                  <label class="lbl">Relieving letter <i>(optional · max 8 MB)</i></label>
+                  @if (hDraft().existingPath && !hDraft().removeFile) {
+                    <p class="mb-1 text-[11px]">
+                      Current letter:
+                      <a [href]="url(hDraft().existingPath)" target="_blank" rel="noopener" class="font-semibold underline">Open</a>
+                      ·
+                      <button type="button" class="font-semibold underline" style="color:#ef4444" (click)="setH('removeFile', true)">Remove</button>
+                      <span class="opacity-60"> (choose a file below to replace)</span>
+                    </p>
+                  }
+                  @if (hDraft().removeFile) {
+                    <p class="mb-1 text-[11px]" style="color:#ef4444">
+                      Current letter will be removed.
+                      <button type="button" class="font-semibold underline" (click)="setH('removeFile', false)">Undo</button>
+                    </p>
+                  }
+                  <input #hf class="inp" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="onHistFile($event)" />
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button type="button" class="btn" (click)="addHist(hf)">{{ editingHist() !== null ? 'Update entry' : '+ Add entry' }}</button>
+                @if (editingHist() !== null) {
+                  <button type="button" class="ghost" (click)="cancelHist(hf)">Cancel</button>
+                }
+              </div>
+            </div>
+
+            @for (h of hist(); track h.uid) {
+              <div class="row">
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-xs font-semibold">{{ h.employer }}</p>
+                  <p class="truncate text-[11px] opacity-70">
+                    {{ h.startDate || '—' }} → {{ h.endDate || '—' }}
+                    @if (h.reason) { · {{ h.reason }} }
+                    @if (histFileLabel(h)) { · {{ histFileLabel(h) }} }
+                  </p>
+                </div>
+                <button type="button" class="ghost" (click)="editHist(h)">Edit</button>
+                <button type="button" class="del" (click)="removeHist(h.uid)">Remove</button>
+              </div>
+            }
+          }
+
+          <!-- PASSWORD -->
+          @case ('security') {
+            <h3 class="sec">Reset login password</h3>
+            <p class="mb-2 text-xs opacity-70">Leave empty to keep the current password.</p>
+            <div class="grid2">
+              <div>
+                <label class="lbl">New password <i>min 8 · letter + number</i></label>
+                <input class="inp" maxlength="64" autocomplete="new-password" placeholder="New password" [type]="showPw() ? 'text' : 'password'" [value]="f.newPassword" (input)="set('newPassword', val($event))" />
+              </div>
+              <div>
+                <label class="lbl">Confirm password</label>
+                <input class="inp" maxlength="64" autocomplete="new-password" placeholder="Confirm password" [type]="showPw() ? 'text' : 'password'" [value]="f.confirmPassword" (input)="set('confirmPassword', val($event))" />
+              </div>
+              <label class="full flex items-center gap-2 text-xs">
+                <input type="checkbox" [checked]="showPw()" (change)="showPw.set(!showPw())" /> Show passwords
+              </label>
+            </div>
+          }
+        }
+      </div>
+
+      <!-- Footer -->
+      <div class="line flex flex-col gap-2 border-t p-3 sm:flex-row sm:items-center sm:justify-between">
+        <p class="min-w-0 flex-1 text-xs font-medium" style="color:#ef4444">{{ error() }}</p>
+        <button type="button" class="btn shrink-0" style="padding:0.5rem 1.25rem" (click)="submit()" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : 'Save changes' }}
+        </button>
+      </div>
+    </section>
+  }
+    @if (pickerOpen()) {
+    <app-employee-manager-picker
+      [excludeUserId]="selfUserId()"
+      [selectedIds]="managerIds()"
+      [message]="pickerMsg()"
+      (picked)="addManager($event)"
+      (closed)="pickerOpen.set(false)" />
+  }
+</div>

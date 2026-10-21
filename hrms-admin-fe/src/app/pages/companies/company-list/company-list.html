@@ -1,0 +1,503 @@
+<div
+  class="relative min-h-full overflow-hidden bg-gradient-to-br from-sky-50 via-white to-blue-100 p-4 sm:p-6 lg:p-8"
+>
+  <div
+    class="pointer-events-none absolute -left-24 -top-24 h-96 w-96 rounded-full bg-blue-400/25 blur-[100px]"
+  ></div>
+  <div
+    class="pointer-events-none absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-sky-300/30 blur-[100px]"
+  ></div>
+
+  <div class="relative mx-auto max-w-6xl">
+    <!-- Header -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Companies</h1>
+        <p class="mt-1 text-sm text-slate-500">{{ total() }} registered</p>
+      </div>
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <input
+          #q
+          type="search"
+          placeholder="Search name, owner, email, phone"
+          (input)="onSearch(q.value)"
+          class="w-full rounded-xl border border-slate-200 bg-white/70 px-3.5 py-2.5 text-sm text-slate-800 outline-none backdrop-blur-xl transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 sm:w-72"
+        />
+        <a
+          routerLink="/company/register"
+          class="flex items-center justify-center rounded-xl bg-gradient-to-b from-blue-500 to-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 ring-1 ring-white/20 transition hover:from-blue-400 hover:to-blue-700"
+        >
+          + Add company
+        </a>
+      </div>
+    </div>
+
+    @if (listError()) {
+      <div
+        class="mt-4 rounded-xl border border-red-300/60 bg-red-50 px-4 py-3 text-sm text-red-600"
+      >
+        {{ listError() }}
+      </div>
+    }
+
+    <!-- List -->
+    <div class="mt-6 space-y-3">
+      @if (loading()) {
+        @for (i of [1, 2, 3]; track i) {
+          <div class="h-20 animate-pulse rounded-2xl border border-white/70 bg-white/50"></div>
+        }
+      } @else if (items().length === 0) {
+        <div
+          class="rounded-2xl border border-white/70 bg-white/60 p-10 text-center text-sm text-slate-500 backdrop-blur-xl"
+        >
+          No companies found.
+        </div>
+      } @else {
+        @for (c of items(); track c.id) {
+          <div
+            class="flex flex-col gap-4 rounded-2xl border border-white/70 bg-white/60 p-4 shadow-[0_20px_50px_-25px_rgba(37,99,235,0.35)] backdrop-blur-xl md:flex-row md:items-center"
+          >
+            <app-brand-logo
+              [src]="c.logo ? url(c.logo) : null"
+              [logo]="themeOf(c.theme).logo"
+              [size]="44"
+              [initial]="c.name[0]"
+              [accent]="themeOf(c.theme).accent"
+              [accentText]="textOn(themeOf(c.theme).accent)"
+            />
+
+            <div class="min-w-0 flex-1 text-sm text-slate-600">
+              <p class="truncate">{{ c.email }}</p>
+              <p class="truncate text-xs text-slate-500">{{ c.phoneNumber }}</p>
+            </div>
+
+            <div class="flex items-center justify-between gap-4 md:justify-end">
+              <span
+                class="rounded-full px-2.5 py-1 text-xs font-medium"
+                [class]="
+                  c.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'
+                "
+              >
+                {{ c.isActive ? 'Active' : 'Inactive' }}
+              </span>
+
+              <button
+                type="button"
+                role="switch"
+                [attr.aria-checked]="c.isActive"
+                [disabled]="busyId() === c.id"
+                (click)="toggle(c)"
+                class="relative h-6 w-11 shrink-0 rounded-full transition disabled:opacity-60"
+                [class]="c.isActive ? 'bg-blue-600' : 'bg-slate-300'"
+              >
+                <span
+                  class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition"
+                  [class]="c.isActive ? 'translate-x-5' : ''"
+                ></span>
+              </button>
+
+              <button
+                type="button"
+                (click)="openEdit(c)"
+                class="rounded-lg border border-blue-200 bg-white/80 px-3.5 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50"
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Pagination -->
+    @if (total() > pageSize) {
+      <div class="mt-6 flex items-center justify-between text-sm text-slate-600">
+        <span>Page {{ page() }} of {{ pages() }}</span>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            (click)="go(-1)"
+            [disabled]="page() <= 1"
+            class="rounded-lg border border-slate-200 bg-white/70 px-3.5 py-2 transition hover:border-blue-300 disabled:opacity-50"
+          >
+            Prev
+          </button>
+          <button
+            type="button"
+            (click)="go(1)"
+            [disabled]="page() >= pages()"
+            class="rounded-lg border border-slate-200 bg-white/70 px-3.5 py-2 transition hover:border-blue-300 disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- ============ EDIT MODAL ============ -->
+  @if (editing()) {
+    <div
+      class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+      (click)="close()"
+    >
+      <div
+        class="max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-t-3xl border border-white/70 bg-white/90 p-5 shadow-2xl backdrop-blur-xl sm:rounded-3xl sm:p-7"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-slate-900">Edit company</h2>
+          <button
+            type="button"
+            (click)="close()"
+            aria-label="Close"
+            class="grid h-8 w-8 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              class="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="save()" novalidate class="mt-5 space-y-5">
+          <!-- Fields -->
+          <div class="grid gap-4 sm:grid-cols-2">
+            @for (f of fields; track f.name) {
+              <div>
+                <label
+                  [for]="'e-' + f.name"
+                  class="mb-1.5 block text-[13px] font-medium text-slate-600"
+                  >{{ f.label }}</label
+                >
+                <input
+                  [id]="'e-' + f.name"
+                  [type]="f.type"
+                  [formControlName]="f.name"
+                  [placeholder]="f.placeholder"
+                  (input)="clearErr(f.name)"
+                  (blur)="checkDup(f.name)"
+                  class="w-full rounded-xl border bg-white/80 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:ring-4"
+                  [class]="
+                    bad(f.name)
+                      ? 'border-red-400 focus:border-red-400 focus:ring-red-400/15'
+                      : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/15'
+                  "
+                />
+                @if (err(f.name); as e) {
+                  <p class="mt-1.5 text-xs text-red-500">{{ e }}</p>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Logo -->
+          <div>
+            <span class="mb-1.5 block text-[13px] font-medium text-slate-600">Company logo</span>
+            <label
+              class="flex cursor-pointer items-center gap-4 rounded-xl border border-dashed border-blue-300 bg-white/50 p-3 transition hover:bg-blue-50/60"
+            >
+              <div
+                class="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-blue-50 ring-1 ring-blue-100"
+              >
+                @if (logoPreview()) {
+                  <img [src]="logoPreview()" alt="" class="h-full w-full object-contain" />
+                } @else {
+                  <span class="text-lg font-bold text-blue-400">{{ initial() }}</span>
+                }
+              </div>
+              <div class="text-sm">
+                <p class="font-medium text-slate-700">Click to change</p>
+                <p class="text-xs text-slate-500">PNG, JPG or WebP · max 2 MB</p>
+              </div>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                class="sr-only"
+                (change)="onLogo($event)"
+              />
+            </label>
+            @if (logoError() || serverErrors()['logo']) {
+              <p class="mt-1.5 text-xs text-red-500">{{ logoError() || serverErrors()['logo'] }}</p>
+            }
+            @if (logoPreview()) {
+              <div
+                class="mt-3 flex items-center justify-center rounded-xl p-4 ring-1 ring-slate-200"
+                [style.background]="theme().sidebar"
+              >
+                <app-brand-logo
+                  [src]="logoPreview()"
+                  [logo]="theme().logo"
+                  [size]="56"
+                  [initial]="initial()"
+                  [accent]="theme().accent"
+                  [accentText]="textOn(theme().accent)"
+                />
+              </div>
+              <app-logo-controls
+                class="mt-3 block"
+                [value]="theme().logo"
+                (valueChange)="setLogo($event)"
+              />
+            }
+          </div>
+
+          <!-- Address + location -->
+          <div>
+            <label for="e-address" class="mb-1.5 block text-[13px] font-medium text-slate-600"
+              >Address</label
+            >
+            <textarea
+              id="e-address"
+              formControlName="address"
+              rows="2"
+              placeholder="Street, city, state, pincode"
+              class="w-full resize-none rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
+            ></textarea>
+
+            <div class="mt-3 flex items-center justify-between">
+              <p class="text-sm font-medium text-slate-700">Pin exact location</p>
+              <button
+                type="button"
+                role="switch"
+                [attr.aria-checked]="locationOn()"
+                (click)="toggleLocation()"
+                class="relative h-6 w-11 shrink-0 rounded-full transition"
+                [class]="locationOn() ? 'bg-blue-600' : 'bg-slate-300'"
+              >
+                <span
+                  class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition"
+                  [class]="locationOn() ? 'translate-x-5' : ''"
+                ></span>
+              </button>
+            </div>
+
+            @if (locationOn()) {
+              <div class="mt-3 space-y-3 rounded-xl bg-blue-50/60 p-3.5 ring-1 ring-blue-100">
+                <button
+                  type="button"
+                  (click)="useCurrentLocation()"
+                  [disabled]="locating()"
+                  class="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:opacity-70 sm:w-auto"
+                >
+                  {{ locating() ? 'Locating…' : 'Use my current location' }}
+                </button>
+                <input
+                  #link
+                  type="text"
+                  placeholder="…or paste a Google Maps link"
+                  (input)="onLink(link.value)"
+                  class="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
+                />
+                @if (locationError()) {
+                  <p class="text-xs text-red-500">{{ locationError() }}</p>
+                }
+                @if (lat() !== null && lng() !== null) {
+                  <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
+                    <span
+                      >Lat <b class="text-slate-800">{{ lat() }}</b></span
+                    >
+                    <span
+                      >Lng <b class="text-slate-800">{{ lng() }}</b></span
+                    >
+                    <a
+                      [href]="'https://www.google.com/maps?q=' + lat() + ',' + lng()"
+                      target="_blank"
+                      rel="noopener"
+                      class="font-medium text-blue-600 hover:text-blue-500"
+                      >Open in Maps</a
+                    >
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- About -->
+          <div>
+            <label for="e-about" class="mb-1.5 block text-[13px] font-medium text-slate-600"
+              >About</label
+            >
+            <textarea
+              id="e-about"
+              formControlName="about"
+              rows="3"
+              placeholder="Short description of the company"
+              class="w-full resize-none rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"
+            ></textarea>
+          </div>
+
+          <!-- Theme -->
+          <div>
+            <span class="mb-0.5 block text-[13px] font-medium text-slate-600">Dashboard theme</span>
+            <p class="text-xs text-slate-500">Live preview of the company dashboard</p>
+
+            <!-- Preview -->
+            <div
+              class="mt-3 overflow-hidden rounded-2xl border border-white/70 p-3 shadow-inner"
+              [style]="frame(theme())"
+            >
+              <div class="flex h-64 gap-2.5">
+                <!-- sidebar -->
+                <div
+                  class="flex w-[30%] flex-col gap-2 rounded-xl p-2.5"
+                  [style]="panel(theme(), theme().sidebar)"
+                  [style.color]="textOn(theme().sidebar)"
+                >
+                 <div class="flex items-center gap-1.5">
+  @if (theme().logo.place !== 'navbar') {
+    <app-brand-logo [src]="logoPreview()" [logo]="theme().logo" [size]="28"
+      [initial]="initial()" [accent]="theme().accent" [accentText]="textOn(theme().accent)" />
+  }
+  @if (theme().logo.showName || theme().logo.place === 'navbar') {
+    <span class="truncate text-[11px] font-semibold">{{ form.controls.companyName.value || 'Your company' }}</span>
+  }
+</div>
+                  <div class="mt-1 space-y-1.5">
+                    <div class="h-2 w-full rounded-full" [style.background]="theme().accent"></div>
+                    <div class="h-2 w-4/5 rounded-full bg-current opacity-30"></div>
+                    <div class="h-2 w-3/5 rounded-full bg-current opacity-30"></div>
+                    <div class="h-2 w-4/5 rounded-full bg-current opacity-30"></div>
+                  </div>
+                </div>
+
+                <!-- main -->
+                <div class="flex min-w-0 flex-1 flex-col gap-2.5">
+                  <div
+                    class="flex items-center justify-between rounded-xl px-3 py-2"
+                    [style]="panel(theme(), theme().navbar)"
+                    [style.color]="textOn(theme().navbar)"
+                  >
+@if (theme().logo.place !== 'sidebar') {
+  <app-brand-logo [src]="logoPreview()" [logo]="theme().logo" [size]="18"
+    [initial]="initial()" [accent]="theme().accent" [accentText]="textOn(theme().accent)" />
+} @else {
+  <div class="h-2 w-16 rounded-full bg-current opacity-40"></div>
+}                    <div class="h-5 w-5 rounded-full" [style.background]="theme().accent"></div>
+                  </div>
+
+                  <div class="grid grid-cols-3 gap-2.5">
+                    @for (i of [1, 2, 3]; track i) {
+                      <div
+                        class="h-14 rounded-xl p-2"
+                        [style]="panel(theme(), theme().content)"
+                        [style.color]="textOn(theme().content)"
+                      >
+                        <div class="h-1.5 w-1/2 rounded-full bg-current opacity-40"></div>
+                        <div
+                          class="mt-2 h-3 w-3/4 rounded-full"
+                          [style.background]="theme().accent"
+                        ></div>
+                      </div>
+                    }
+                  </div>
+
+                  <div
+                    class="flex flex-1 items-end gap-1.5 rounded-xl p-3"
+                    [style]="panel(theme(), theme().content)"
+                  >
+                    @for (h of [40, 65, 30, 80, 55, 90, 45]; track $index) {
+                      <div
+                        class="flex-1 rounded-t"
+                        [style.height.%]="h"
+                        [style.background]="theme().accent"
+                        [style.opacity]="0.45 + h / 200"
+                      ></div>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Presets -->
+            <p class="mb-2 mt-5 text-[13px] font-medium text-slate-600">Presets</p>
+            <div class="flex flex-wrap gap-2">
+              @for (p of presets; track p.name) {
+                <button
+                  type="button"
+                  (click)="applyPreset(p.theme)"
+                  class="flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-blue-400 hover:text-blue-600"
+                >
+                  <span
+                    class="h-3 w-3 rounded-full ring-1 ring-black/10"
+                    [style.background]="p.theme.accent"
+                  ></span>
+                  {{ p.name }}
+                </button>
+              }
+            </div>
+
+            <!-- Style -->
+            <p class="mb-2 mt-5 text-[13px] font-medium text-slate-600">Style</p>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              @for (s of styles; track s.key) {
+                <button
+                  type="button"
+                  (click)="setStyle(s.key)"
+                  class="rounded-lg border px-3 py-2 text-xs font-medium transition"
+                  [class]="
+                    theme().style === s.key
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-slate-200 bg-white/70 text-slate-600 hover:border-blue-300'
+                  "
+                >
+                  {{ s.label }}
+                </button>
+              }
+            </div>
+
+            <!-- Colors -->
+            <p class="mb-2 mt-5 text-[13px] font-medium text-slate-600">Colors</p>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              @for (c of colorKeys; track c.key) {
+                <label
+                  class="flex cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-xs font-medium text-slate-600"
+                >
+                  {{ c.label }}
+                  <input
+                    #col
+                    type="color"
+                    [value]="theme()[c.key]"
+                    (input)="setColor(c.key, col.value)"
+                    class="h-6 w-8 cursor-pointer rounded border-0 bg-transparent p-0"
+                  />
+                </label>
+              }
+            </div>
+          </div>
+
+          @if (formError()) {
+            <div
+              class="rounded-xl border border-red-300/60 bg-red-50 px-4 py-3 text-sm text-red-600"
+            >
+              {{ formError() }}
+            </div>
+          }
+
+          <div class="flex flex-col-reverse gap-3 pt-1 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              (click)="close()"
+              class="rounded-xl border border-slate-200 bg-white/80 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              [disabled]="saving()"
+              class="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-blue-500 to-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 ring-1 ring-white/20 transition hover:from-blue-400 hover:to-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {{ saving() ? 'Saving…' : 'Save changes' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

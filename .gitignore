@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.angular/
+.env
+bin/
+obj/
+.vs/
+*.zip
+uploads/
+storage/
+appsettings.Development.json

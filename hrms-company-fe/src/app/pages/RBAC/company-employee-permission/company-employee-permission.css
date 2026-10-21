@@ -1,0 +1,117 @@
+:host {
+  display: block;
+}
+
+.line {
+  border-color: color-mix(in srgb, var(--txt) 15%, transparent);
+}
+
+.inp {
+  width: 100%;
+  border-radius: 0.6rem;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.8rem;
+  color: inherit;
+  outline: none;
+  background: color-mix(in srgb, var(--txt) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--txt) 18%, transparent);
+}
+.inp:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.btn {
+  border-radius: 0.6rem;
+  padding: 0.45rem 1.1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--accent);
+  color: var(--accent-text);
+  cursor: pointer;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ghost {
+  border-radius: 0.6rem;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--txt) 22%, transparent);
+}
+.ghost:hover {
+  background: color-mix(in srgb, var(--txt) 8%, transparent);
+}
+
+.emp {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 0.7rem;
+  padding: 0.5rem 0.6rem;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.emp:hover {
+  background: color-mix(in srgb, var(--txt) 8%, transparent);
+}
+.emp.on {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.av {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.emp.on .av {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.grp {
+  border-radius: 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--txt) 15%, transparent);
+  background: color-mix(in srgb, var(--txt) 4%, transparent);
+}
+.grp-h {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  cursor: pointer;
+  border-bottom: 1px solid color-mix(in srgb, var(--txt) 12%, transparent);
+}
+.perm-grid {
+  display: grid;
+  gap: 0.25rem 1rem;
+  padding: 0.6rem 0.8rem;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+}
+.perm {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  padding: 0.25rem 0;
+  cursor: pointer;
+}
+
+input[type='checkbox'] {
+  accent-color: var(--accent);
+  width: 0.95rem;
+  height: 0.95rem;
+}

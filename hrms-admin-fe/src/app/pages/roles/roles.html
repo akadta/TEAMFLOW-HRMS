@@ -1,0 +1,85 @@
+<div class="relative min-h-full overflow-hidden bg-gradient-to-br from-sky-50 via-white to-blue-100 p-3 sm:p-4">
+  <div class="pointer-events-none absolute -left-24 -top-24 h-96 w-96 rounded-full bg-blue-400/25 blur-[100px]"></div>
+  <div class="pointer-events-none absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-sky-300/30 blur-[100px]"></div>
+
+  <div class="relative mx-auto max-w-4xl">
+    <div class="flex items-end justify-between gap-2">
+      <div>
+        <h1 class="text-lg font-semibold tracking-tight text-slate-900">Roles</h1>
+        <p class="text-xs text-slate-500">Roles for the main team. Each main employee has one role, and it decides who can sign in.</p>
+      </div>
+      <button type="button" (click)="openNew()"
+              class="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-500">+ Add role</button>
+    </div>
+
+    @if (error()) {
+      <div class="mt-2 rounded-lg border border-red-300/60 bg-red-50 px-3 py-2 text-xs text-red-600">{{ error() }}</div>
+    }
+
+    <section class="mt-3 rounded-xl border border-white/70 bg-white/60 p-3 shadow-[0_12px_30px_-15px_rgba(37,99,235,0.35)] backdrop-blur-xl">
+      <div class="overflow-auto rounded-lg border border-white/70 bg-white/70">
+        <table class="w-full min-w-[560px] text-left text-xs">
+          <thead class="bg-slate-50/95 text-[11px] uppercase tracking-wide text-slate-500">
+            <tr>
+              <th class="px-2.5 py-2 font-semibold">Role</th>
+              <th class="px-2.5 py-2 font-semibold">Slug</th>
+              <th class="px-2.5 py-2 font-semibold">Main employees</th>
+              <th class="px-2.5 py-2 font-semibold">Status</th>
+              <th class="px-2.5 py-2 text-right font-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @if (loading()) {
+              @for (i of [1, 2, 3]; track i) {
+                <tr><td colspan="5" class="px-2.5 py-1.5"><div class="h-7 animate-pulse rounded-md bg-slate-100"></div></td></tr>
+              }
+            } @else if (rows().length === 0) {
+              <tr><td colspan="5" class="px-2.5 py-8 text-center text-slate-500">No roles yet.</td></tr>
+            } @else {
+              @for (r of rows(); track r.id) {
+                <tr class="transition hover:bg-white">
+                  <td class="px-2.5 py-2 font-semibold text-slate-800">{{ r.name }}</td>
+                  <td class="px-2.5 py-2 font-mono text-[11px] text-slate-500">{{ r.slug }}</td>
+                  <td class="px-2.5 py-2 text-slate-600">{{ r.mainEmployees }}</td>
+                  <td class="px-2.5 py-2">
+                    <button type="button" role="switch" [attr.aria-checked]="r.isActive" [disabled]="busyId() === r.id" (click)="toggle(r)"
+                            class="relative h-4 w-8 shrink-0 rounded-full transition disabled:opacity-60"
+                            [class]="r.isActive ? 'bg-blue-600' : 'bg-slate-300'">
+                      <span class="absolute left-0.5 top-0.5 h-3 w-3 rounded-full bg-white shadow transition" [class]="r.isActive ? 'translate-x-4' : ''"></span>
+                    </button>
+                  </td>
+                  <td class="whitespace-nowrap px-2.5 py-2 text-right">
+                    <button type="button" (click)="openEdit(r)"
+                            class="rounded-md border border-amber-200 bg-white/80 px-2 py-1 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-50">Edit</button>
+                    <button type="button" (click)="remove(r)" [disabled]="busyId() === r.id"
+                            class="ml-1 rounded-md border border-red-200 bg-white/80 px-2 py-1 text-[11px] font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60">Del</button>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  @if (modal()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-3 backdrop-blur-sm" (click)="closeModal()">
+      <div class="w-full max-w-sm rounded-2xl border border-white/70 bg-white p-5 shadow-2xl" (click)="$event.stopPropagation()">
+        <h3 class="text-sm font-bold text-slate-900">{{ editId() === null ? 'Add role' : 'Edit role' }}</h3>
+        <label class="mt-3 block text-xs font-medium text-slate-600">Role name</label>
+        <input type="text" maxlength="60" placeholder="e.g. Operations Manager" [value]="name()" (input)="onName($event)" (keyup.enter)="save()"
+               class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15" />
+        @if (formError()) {
+          <p class="mt-2 text-xs text-red-600">{{ formError() }}</p>
+        }
+        <div class="mt-4 flex justify-end gap-2">
+          <button type="button" (click)="closeModal()"
+                  class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50">Cancel</button>
+          <button type="button" (click)="save()" [disabled]="saving()"
+                  class="rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:opacity-70">{{ saving() ? 'Saving…' : 'Save' }}</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

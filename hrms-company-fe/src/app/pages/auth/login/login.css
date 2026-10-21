@@ -1,0 +1,91 @@
+:host {
+  display: block;
+  height: 100dvh;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* grid tinted with the company's accent colour */
+.pattern-grid {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--accent, #2563eb) 9%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--accent, #2563eb) 9%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at center, black 25%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 25%, transparent 75%);
+}
+
+/* inputs: solid white, black border, accent focus ring */
+.glass-input {
+  background: #ffffff;
+  border: 1.5px solid #0f172a;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.glass-input:focus {
+  border-color: var(--accent, #2563eb);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, #2563eb) 22%, transparent);
+}
+
+.glass-input.ng-invalid.ng-touched {
+  border-color: #f87171;
+}
+
+.glass-input.ng-invalid.ng-touched:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18);
+}
+
+/* icons inside the white inputs: always black and above the input */
+.field-icon,
+.field-btn {
+  z-index: 10;
+  color: #0f172a;
+}
+
+.field-btn:hover {
+  color: var(--accent, #1d4ed8);
+}
+
+.float-a {
+  animation: float-a 9s ease-in-out infinite;
+}
+
+.float-b {
+  animation: float-b 11s ease-in-out infinite;
+}
+
+@keyframes float-a {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(2deg);
+  }
+}
+
+@keyframes float-b {
+  0%,
+  100% {
+    transform: translateY(0) rotate(3deg);
+  }
+  50% {
+    transform: translateY(12px) rotate(-3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float-a,
+  .float-b {
+    animation: none;
+  }
+}

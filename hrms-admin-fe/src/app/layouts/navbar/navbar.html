@@ -1,0 +1,81 @@
+<header class="relative z-20 flex h-12 shrink-0 items-center gap-2 border-b border-blue-400/15 bg-[#06143f]/70 px-3 backdrop-blur-xl">
+
+  <!-- Sidebar toggle -->
+  <button
+    type="button"
+    (click)="toggleSidebar.emit()"
+    aria-label="Toggle sidebar"
+    class="grid h-8 w-8 place-items-center rounded-md text-blue-200/70 transition hover:bg-white/10 hover:text-white">
+    <app-icon name="menu" class="h-[18px] w-[18px]" />
+  </button>
+
+  <!-- Search -->
+  <div class="relative hidden w-full max-w-xs sm:block">
+    <app-icon name="search" class="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-blue-300/50" />
+    <input
+      type="text"
+      placeholder="Search..."
+      class="h-8 w-full rounded-md border border-blue-400/20 bg-[#040b1f]/60 pl-8 pr-3 text-[12.5px] text-[#e6efff] outline-none transition placeholder:text-blue-200/30 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+  </div>
+
+  <div class="ml-auto flex items-center gap-1.5">
+
+    <!-- Notifications -->
+    <button
+      type="button"
+      aria-label="Notifications"
+      class="relative grid h-8 w-8 place-items-center rounded-md text-blue-200/70 transition hover:bg-white/10 hover:text-white">
+      <app-icon name="bell" class="h-[18px] w-[18px]" />
+      <span class="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 ring-2 ring-[#06143f]"></span>
+    </button>
+
+    <!-- Avatar dropdown -->
+    <div class="relative">
+      <button
+        type="button"
+        (click)="open.set(!open())"
+        class="flex items-center gap-2 rounded-md py-1 pl-1 pr-2 transition hover:bg-white/10">
+        <span class="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-[11px] font-semibold text-white ring-1 ring-white/20">
+          {{ user.initials }}
+        </span>
+        <span class="hidden text-left leading-tight md:block">
+          <span class="block text-[12px] font-medium text-white">{{ user.name }}</span>
+          <span class="block text-[10px] text-blue-200/50">{{ user.role }}</span>
+        </span>
+        <app-icon
+          name="chevronDown"
+          class="hidden h-3.5 w-3.5 text-blue-200/60 transition-transform md:block"
+          [class.rotate-180]="open()" />
+      </button>
+
+      @if (open()) {
+        <div class="absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-lg border border-blue-400/20 bg-[#0a1a4a]/90 p-1 shadow-xl shadow-black/40 backdrop-blur-xl">
+          <div class="border-b border-blue-400/10 px-2.5 py-2 md:hidden">
+            <p class="text-[12px] font-medium text-white">{{ user.name }}</p>
+            <p class="text-[10px] text-blue-200/50">{{ user.role }}</p>
+          </div>
+
+          @for (m of userMenu; track m.route) {
+            <a
+              [routerLink]="m.route"
+              (click)="open.set(false)"
+              class="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[12.5px] text-blue-100/80 transition hover:bg-white/10 hover:text-white">
+              <app-icon [name]="m.icon" class="h-4 w-4" />
+              {{ m.label }}
+            </a>
+          }
+
+          <div class="my-1 border-t border-blue-400/10"></div>
+
+          <button
+            type="button"
+            (click)="logout()"
+            class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-[12.5px] text-red-300 transition hover:bg-red-500/10">
+            <app-icon name="logOut" class="h-4 w-4" />
+            Logout
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+</header>

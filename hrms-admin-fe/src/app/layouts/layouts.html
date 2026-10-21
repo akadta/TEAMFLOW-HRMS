@@ -1,0 +1,18 @@
+<div class="flex h-dvh w-full overflow-hidden bg-gradient-to-br from-[#050f33] via-[#06143f] to-[#030818] font-sans text-slate-200">
+
+  <app-sidebar
+    [collapsed]="collapsed()"
+    [mobileOpen]="mobileOpen()"
+    (closeMobile)="mobileOpen.set(false)"
+    (expand)="collapsed.set(false)" />
+
+  <div class="flex min-w-0 flex-1 flex-col">
+    <app-navbar (toggleSidebar)="toggleSidebar()" />
+
+    <!-- Only this area scrolls. Sidebar + navbar stay fixed. -->
+    <main class="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white p-3 text-slate-800 sm:p-4 lg:rounded-tl-xl">
+      <router-outlet />
+    </main>
+  </div>
+</div>
+<app-notify-modal />

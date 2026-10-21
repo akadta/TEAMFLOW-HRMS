@@ -1,0 +1,384 @@
+<div
+  class="mx-auto max-w-7xl p-3 sm:p-4"
+  [style.--accent]="brand.theme().accent"
+  [style.--accent-text]="brand.accentText()"
+  [style.--card]="brand.theme().navbar"
+>
+  <div class="flex flex-wrap items-end gap-2">
+    <div class="mr-auto">
+      <h1 class="text-lg font-semibold tracking-tight" [style.color]="brand.contentText()">
+        Attendance report
+      </h1>
+      <p class="text-xs opacity-70" [style.color]="brand.contentText()">
+        One row per employee per day · {{ filtered().length }} rows · IST
+      </p>
+    </div>
+    <input class="inp" type="date" [value]="from()" (change)="from.set(val($event)); load()" />
+    <input class="inp" type="date" [value]="to()" (change)="to.set(val($event)); load()" />
+
+    <button
+      type="button"
+      class="btn btn-ok"
+      [disabled]="!filtered().length || !!busy()"
+      (click)="ask('excel')"
+    >
+      @if (busy() === 'excel') {
+        <span class="spin"></span>Excel…
+      } @else {
+        Excel
+      }
+    </button>
+    <button
+      type="button"
+      class="btn"
+      style="background: #dc2626; color: #fff"
+      [disabled]="!filtered().length || !!busy()"
+      (click)="ask('pdf')"
+    >
+      @if (busy() === 'pdf') {
+        <span class="spin"></span>PDF…
+      } @else {
+        PDF
+      }
+    </button>
+  </div>
+
+  @if (error()) {
+    <div
+      class="mt-2 rounded-lg px-3 py-2 text-xs"
+      style="background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5"
+    >
+      {{ error() }}
+    </div>
+  }
+
+  <section
+    class="mt-3 rounded-xl p-3"
+    [style]="brand.navbarStyle()"
+    [style.color]="brand.navbarText()"
+  >
+    <!-- status chips with counts -->
+    <div class="flex flex-wrap gap-1.5">
+      @for (c of chips; track c) {
+        <button type="button" class="chip" [class.on]="status() === c" (click)="status.set(c)">
+          {{ c === 'all' ? 'All' : STATUS[c].label }}
+          <span class="ml-1 opacity-70">{{ counts()[c] ?? 0 }}</span>
+        </button>
+      }
+    </div>
+
+    <!-- filters -->
+    <div class="mt-2.5 flex flex-wrap items-center gap-2">
+      <select class="inp max-w-[14rem]" (change)="employee.set(val($event))">
+        <option value="">All employees</option>
+        @for (e of employees(); track e.id) {
+          <option [value]="e.id" [selected]="e.id === employee()">{{ e.label }}</option>
+        }
+      </select>
+      <input
+        class="inp w-48"
+        placeholder="Search name / code"
+        [value]="search()"
+        (input)="search.set(val($event))"
+      />
+      <select class="inp" (change)="role.set(val($event))">
+        <option value="">All roles</option>
+        @for (r of roles(); track r) {
+          <option [value]="r" [selected]="r === role()">{{ r }}</option>
+        }
+      </select>
+      <select class="inp" (change)="bandIdx.set(+val($event))">
+        <option value="-1">Any lateness</option>
+        @for (b of BANDS; track $index) {
+          <option [value]="$index" [selected]="$index === bandIdx()">{{ b.label }}</option>
+        }
+      </select>
+      <select class="inp" (change)="source.set(val($event))">
+        <option value="all" [selected]="source() === 'all'">All sources</option>
+        <option value="normal" [selected]="source() === 'normal'">Marked</option>
+        <option value="request" [selected]="source() === 'request'">Via request</option>
+        <option value="override" [selected]="source() === 'override'">Override</option>
+      </select>
+      <button type="button" class="act" (click)="reset()">Reset</button>
+    </div>
+
+    <!-- table -->
+    <div class="line mt-2.5 max-h-[calc(100vh-20rem)] overflow-auto rounded-lg border">
+      <table class="tbl w-full min-w-[820px] text-left text-xs">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Employee</th>
+            <th>Role</th>
+            <th>Attendance</th>
+            <th>Status</th>
+            <th>Check-in</th>
+            <th>Late</th>
+            <th>Source</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of pageRows(); track r.date + '-' + r.userId) {
+            <tr>
+              <td class="whitespace-nowrap">{{ dayLabel(r.date) }}</td>
+              <td>
+                <p class="font-semibold">{{ r.name }}</p>
+                <p class="text-[11px] opacity-70">{{ r.code }}</p>
+              </td>
+              <td>{{ r.role ?? '—' }}</td>
+              <td>
+                <span
+                  class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                  [class]="
+                    result(r.status) === 'Present'
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : result(r.status) === 'Absent'
+                        ? 'bg-red-100 text-red-700'
+                        : 'text-slate-400'
+                  "
+                  >{{ result(r.status) }}</span
+                >
+              </td>
+              <td>
+                <span
+                  class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                  [class]="STATUS[r.status].cls"
+                  >{{ STATUS[r.status].label }}</span
+                >
+                @if (r.note) {
+                  <span class="ml-1 text-[11px] opacity-70">{{ r.note }}</span>
+                }
+              </td>
+              <td class="whitespace-nowrap">{{ r.checkInAt ? t12(r.checkInAt) : '—' }}</td>
+              <td>
+                @if (r.checkInAt) {
+                  <span
+                    class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                    [class]="band(r.lateMinutes).cls"
+                    >{{ lateText(r.lateMinutes) }}</span
+                  >
+                } @else {
+                  <span class="opacity-50">—</span>
+                }
+              </td>
+              <td>
+                {{
+                  r.source === 'request'
+                    ? 'Request'
+                    : r.source === 'override'
+                      ? 'Override'
+                      : r.source
+                        ? 'Marked'
+                        : '—'
+                }}
+              </td>
+              <td>
+                @if (canFix(r)) {
+                  <button type="button" class="act" (click)="openOv(r)">Override</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="10" class="py-8 text-center opacity-70">
+                {{ loading() ? 'Loading…' : 'No rows.' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- pagination -->
+    <div class="mt-2.5 flex items-center justify-between text-xs">
+      <span>Page {{ cur() + 1 }} / {{ pages() }}</span>
+      <div class="flex gap-1.5">
+        <button type="button" class="act" [disabled]="cur() === 0" (click)="page.set(cur() - 1)">
+          Prev
+        </button>
+        <button
+          type="button"
+          class="act"
+          [disabled]="cur() >= pages() - 1"
+          (click)="page.set(cur() + 1)"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Export modal -->
+  @if (kind(); as k) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-3 backdrop-blur-sm"
+      (click)="!busy() && kind.set(null)"
+    >
+      <div
+        class="w-full max-w-sm rounded-2xl p-4 shadow-2xl"
+        [style.background]="brand.theme().navbar"
+        [style.color]="brand.navbarText()"
+        (click)="$event.stopPropagation()"
+      >
+        <h3 class="text-sm font-semibold">Download {{ k === 'excel' ? 'Excel' : 'PDF' }}</h3>
+        <p class="mb-3 text-[11px] opacity-70">
+          {{ pickedEmployee() ?? 'All employees' }} · {{ filtered().length }} rows · choose a colour
+          theme
+        </p>
+
+        <div class="grid grid-cols-4 gap-3">
+          @for (o of options(); track o.id) {
+            <button
+              type="button"
+              class="swatch"
+              [class.on]="themeId() === o.id"
+              [disabled]="!!busy()"
+              (click)="themeId.set(o.id)"
+            >
+              <i [style.background]="o.hex"></i>{{ o.label }}
+            </button>
+          }
+        </div>
+
+        <!-- live preview of the header colour -->
+        <div class="mt-4 overflow-hidden rounded-lg border line text-[11px]">
+          <div
+            class="px-3 py-1.5 font-bold"
+            [style.background]="pickedHex()"
+            [style.color]="textOn(pickedHex())"
+          >
+            Date · Name · Status
+          </div>
+          <div class="px-3 py-1" [style.background]="tint(pickedHex())" style="color: #0f172a">
+            Sample row
+          </div>
+          <div class="px-3 py-1" style="background: #fff; color: #0f172a">Sample row</div>
+        </div>
+
+        <div class="mt-4 flex gap-2">
+          <button
+            type="button"
+            class="act px-4 py-2"
+            [disabled]="!!busy()"
+            (click)="kind.set(null)"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn btn-block flex-1"
+            [disabled]="!!busy()"
+            (click)="confirm()"
+          >
+            @if (busy()) {
+              <span class="spin"></span>Preparing…
+            } @else {
+              Download
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Override modal -->
+  @if (ov(); as r) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-3 backdrop-blur-sm"
+      (click)="!ovBusy() && ov.set(null)"
+    >
+      <div
+        class="w-full max-w-md rounded-2xl p-4 shadow-2xl"
+        [style.background]="brand.theme().navbar"
+        [style.color]="brand.navbarText()"
+        (click)="$event.stopPropagation()"
+      >
+        <h3 class="text-sm font-semibold">Override attendance</h3>
+        <p class="mb-3 text-[11px] opacity-70">
+          {{ r.name }} ({{ r.code }}) · {{ dayLabel(r.date) }} · now {{ STATUS[r.status].label }}
+        </p>
+
+        <div class="line flex rounded-lg border p-0.5">
+          <button
+            type="button"
+            class="tab flex-1"
+            [class.on]="ovStatus() === 'present'"
+            (click)="ovStatus.set('present')"
+          >
+            Present
+          </button>
+          <button
+            type="button"
+            class="tab flex-1"
+            [class.on]="ovStatus() === 'absent'"
+            (click)="ovStatus.set('absent')"
+          >
+            Absent
+          </button>
+        </div>
+
+        <label class="mb-1 mt-3 block text-[11px] font-semibold opacity-80"
+          >Note <span style="color: #ef4444">*</span></label
+        >
+        <textarea
+          class="inp w-full"
+          rows="3"
+          maxlength="400"
+          placeholder="Why is this being changed?"
+          [value]="ovNote()"
+          (input)="ovNote.set(val($event))"
+        ></textarea>
+
+        @if (ovStatus() === 'present') {
+          <label class="mb-1 mt-3 block text-[11px] font-semibold opacity-80"
+            >Proof documents <span style="color: #ef4444">*</span>
+            <span class="font-normal opacity-70">(up to 5 · 8 MB each)</span></label
+          >
+          <input
+            class="inp w-full"
+            type="file"
+            multiple
+            accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+            (change)="pickOv($event)"
+          />
+          @for (f of ovFiles(); track $index) {
+            <div class="soft mt-1.5 flex items-center gap-2 px-2 py-1.5">
+              <p class="min-w-0 flex-1 truncate text-xs">{{ f.name }}</p>
+              <button
+                type="button"
+                class="text-[11px] font-semibold"
+                style="color: #ef4444"
+                (click)="dropOv($index)"
+              >
+                Remove
+              </button>
+            </div>
+          }
+        }
+
+        @if (ovError()) {
+          <p class="mt-2 text-xs" style="color: #dc2626">{{ ovError() }}</p>
+        }
+
+        <div class="mt-4 flex gap-2">
+          <button type="button" class="act px-4 py-2" [disabled]="ovBusy()" (click)="ov.set(null)">
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn btn-block flex-1"
+            [disabled]="ovBusy()"
+            (click)="saveOv()"
+          >
+            @if (ovBusy()) {
+              <span class="spin"></span>Saving…
+            } @else {
+              Save override
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

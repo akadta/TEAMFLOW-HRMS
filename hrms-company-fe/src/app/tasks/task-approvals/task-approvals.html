@@ -1,0 +1,69 @@
+<div class="mx-auto max-w-5xl p-3 sm:p-4"
+     [style.--accent]="brand.theme().accent"
+     [style.--accent-text]="brand.accentText()"
+     [style.--card]="brand.theme().navbar">
+
+  <div class="flex flex-wrap items-end justify-between gap-2">
+    <div>
+      <h1 class="text-lg font-semibold tracking-tight" [style.color]="brand.contentText()">Task approvals</h1>
+      <p class="text-xs opacity-70" [style.color]="brand.contentText()">Completed tasks waiting for you · the owner sees every approval of the company</p>
+    </div>
+    <div class="line flex rounded-lg border p-0.5" [style.color]="brand.contentText()">
+      @for (t of tabs; track t.id) { <button type="button" class="tab" [class.on]="scope() === t.id" (click)="setScope(t.id)">{{ t.label }}</button> }
+    </div>
+  </div>
+
+  <section class="mt-3 rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+    <input class="inp w-56" placeholder="Search name / task" [value]="q()" (input)="q.set(val($event))" />
+    @if (error() && !sel()) { <div class="mt-2 rounded-lg px-3 py-2 text-xs" style="background:#fef2f2;color:#dc2626;border:1px solid #fca5a5">{{ error() }}</div> }
+
+    <div class="line mt-2.5 max-h-[calc(100vh-17rem)] overflow-auto rounded-lg border">
+      <table class="tbl w-full min-w-[760px] text-left text-xs">
+        <thead><tr><th>Employee</th><th>Task</th><th>Completed</th><th>Progress</th><th>Approval</th></tr></thead>
+        <tbody>
+          @for (t of shown(); track t.id) {
+            <tr class="clickable" (click)="open(t)">
+              <td><p class="font-semibold">{{ t.name }}</p><p class="text-[11px] opacity-70">{{ t.code }}</p></td>
+              <td class="max-w-[16rem] truncate">{{ t.title }}<span class="ml-1 text-[10px] opacity-60">{{ t.kind === 'assigned' ? '(assigned)' : '' }}</span></td>
+              <td class="whitespace-nowrap text-[11px]">{{ t.completedAt ? dt12(t.completedAt) : '—' }}</td>
+              <td>{{ t.progress }}%</td>
+              <td><span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="AP[t.approval].cls">{{ AP[t.approval].label }}</span></td>
+            </tr>
+          } @empty { <tr><td colspan="5" class="py-8 text-center opacity-70">{{ loading() ? 'Loading…' : 'Nothing is waiting for your approval.' }}</td></tr> }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  @if (sel(); as t) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-3 backdrop-blur-sm" (click)="sel.set(null)">
+      <div class="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl p-4 shadow-2xl" [style.background]="brand.theme().navbar" [style.color]="brand.navbarText()" (click)="$event.stopPropagation()">
+        <div class="flex items-start justify-between gap-2"><div><h3 class="text-sm font-semibold">{{ t.title }}</h3><p class="text-[11px] opacity-70">{{ t.name }} · {{ t.code }}</p></div><span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="TS[t.status].cls">{{ TS[t.status].label }}</span></div>
+        <p class="mt-2 text-[11px] opacity-80">{{ t.startAt ? dt12(t.startAt) : '—' }} → <span [style.color]="overdue(t) ? '#ef4444' : null">{{ t.dueAt ? dt12(t.dueAt) : '—' }}</span>@if (t.completedAt) { · completed {{ dt12(t.completedAt) }} }</p>
+        <div class="mt-2 flex items-center gap-2"><div class="h-2.5 flex-1 overflow-hidden rounded-full bg-white/20"><div class="h-full rounded-full" style="background:var(--accent)" [style.width.%]="t.progress"></div></div><span class="text-xs font-semibold">{{ t.progress }}%</span></div>
+        @if (t.description) { <p class="soft mt-3 whitespace-pre-wrap p-3 text-xs">{{ t.description }}</p> }
+        @if (t.files.length) {
+          <p class="mt-3 text-[11px] font-semibold opacity-80">Files ({{ t.files.length }})</p>
+          <div class="mt-1 space-y-2">
+            @for (f of t.files; track f.id) {
+              @if (isImage(f.filePath)) { <a [href]="fileUrl(f.filePath)" target="_blank" rel="noopener"><img [src]="fileUrl(f.filePath)" [alt]="f.fileName" class="max-h-48 rounded-lg" /></a> }
+              @else if (isVideo(f.filePath)) { <video controls preload="metadata" class="w-full rounded-lg" [src]="fileUrl(f.filePath)"></video> }
+              @else { <a class="soft block truncate px-2.5 py-1.5 text-xs font-medium underline" [href]="fileUrl(f.filePath)" target="_blank" rel="noopener">{{ f.fileName }}</a> }
+            }
+          </div>
+        }
+        <p class="mt-3 text-[11px] font-semibold opacity-80">Approval chain</p>
+        <div class="mt-1 space-y-1">@for (a of t.approvals; track a.id) { <div class="soft flex items-center gap-2 px-2.5 py-1.5 text-[11px]"><span class="font-semibold">{{ group[a.group] ?? a.group }}</span><span class="min-w-0 flex-1 truncate">{{ a.approver ?? '—' }}</span><span class="font-semibold capitalize">{{ a.decision }}</span></div> }</div>
+        @if (t.canDecide) {
+          <textarea class="inp mt-3 w-full" rows="2" maxlength="500" placeholder="Note (optional)" [value]="note()" (input)="note.set(val($event))"></textarea>
+          @if (error()) { <p class="mt-2 text-xs" style="color:#dc2626">{{ error() }}</p> }
+          <div class="mt-3 flex gap-2">
+            <button type="button" class="btn btn-block btn-no flex-1" [disabled]="busy()" (click)="decide(false)">Reject</button>
+            <button type="button" class="btn btn-block btn-ok flex-1" [disabled]="busy()" (click)="decide(true)">Approve</button>
+          </div>
+        }
+        <button type="button" class="act mt-3 w-full py-2 text-center" (click)="sel.set(null)">Close</button>
+      </div>
+    </div>
+  }
+</div>

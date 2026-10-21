@@ -1,0 +1,16 @@
+/* dotted canvas that moves and scales with the tree */
+.dotbg {
+  background-image: radial-gradient(rgb(148 163 184 / 0.4) 1px, transparent 1px);
+}
+
+/* animated highlight on the lines that lead to the hovered person */
+.flow {
+  stroke-dasharray: 7 6;
+  animation: flow 0.9s linear infinite;
+}
+
+@keyframes flow {
+  to {
+    stroke-dashoffset: -13;
+  }
+}

@@ -1,0 +1,68 @@
+<div class="mx-auto max-w-2xl p-3 sm:p-4"
+     [style.--accent]="brand.theme().accent"
+     [style.--accent-text]="brand.accentText()"
+     [style.--card]="brand.theme().navbar">
+
+  <button type="button" class="text-xs font-semibold underline" [style.color]="brand.contentText()" (click)="back()">‹ Back to self tasks</button>
+  <h1 class="mt-1 text-lg font-semibold tracking-tight" [style.color]="brand.contentText()">{{ isEdit ? 'Edit task' : 'New task' }}</h1>
+
+  <section class="mt-3 rounded-xl p-4" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+    @if (loading()) {
+      <p class="py-6 text-center text-xs opacity-70">Loading…</p>
+    } @else {
+      <label class="mb-1 block text-[11px] font-semibold opacity-80">Task name <span style="color:#ef4444">*</span></label>
+      <input class="inp w-full" maxlength="150" placeholder="What do you need to do?" [value]="title()" (input)="title.set(val($event))" />
+
+      <label class="mb-1 mt-3 block text-[11px] font-semibold opacity-80">Status</label>
+      <div class="flex flex-wrap gap-1.5">
+        @for (s of statuses; track s) {
+          <button type="button" class="chip" [class.on]="status() === s" (click)="status.set(s)">{{ TS[s].label }}</button>
+        }
+      </div>
+
+      <label class="mb-1 mt-3 block text-[11px] font-semibold opacity-80">Description <span class="font-normal opacity-70">(optional)</span></label>
+      <textarea class="inp w-full" rows="5" maxlength="4000" placeholder="Details, notes, links…" [value]="description()" (input)="description.set(val($event))"></textarea>
+
+      <label class="mb-1 mt-3 block text-[11px] font-semibold opacity-80">Files <span class="font-normal opacity-70">(optional · up to 10 · 25 MB each)</span></label>
+      <input class="inp w-full" type="file" multiple (change)="pick($event)" />
+
+      @for (f of kept(); track f.id) {
+        <div class="soft mt-1.5 flex items-center gap-2 px-2.5 py-1.5">
+          <a class="min-w-0 flex-1 truncate text-xs font-medium underline" [href]="fileUrl(f.filePath)" target="_blank" rel="noopener">{{ f.fileName }}</a>
+          <span class="text-[11px] opacity-70">{{ fmtSize(f.size) }}</span>
+          <button type="button" class="text-[11px] font-semibold" style="color:#ef4444" (click)="dropOld(f.id)">Remove</button>
+        </div>
+      }
+      @for (f of added(); track $index) {
+        <div class="soft mt-1.5 flex items-center gap-2 px-2.5 py-1.5">
+          <p class="min-w-0 flex-1 truncate text-xs">{{ f.name }} <span class="opacity-60">(new)</span></p>
+          <span class="text-[11px] opacity-70">{{ fmtSize(f.size) }}</span>
+          <button type="button" class="text-[11px] font-semibold" style="color:#ef4444" (click)="dropNew($index)">Remove</button>
+        </div>
+      }
+
+      @if (error()) { <p class="mt-3 text-xs" style="color:#dc2626">{{ error() }}</p> }
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        @if (isEdit) { <button type="button" class="act px-4 py-2" style="color:#ef4444" (click)="confirmDel.set(true)">Delete</button> }
+        <button type="button" class="act ml-auto px-4 py-2" (click)="back()">Cancel</button>
+        <button type="button" class="btn" [disabled]="busy()" (click)="save()">
+          @if (busy()) { <span class="spin"></span>Saving… } @else { {{ isEdit ? 'Save changes' : 'Add task' }} }
+        </button>
+      </div>
+    }
+  </section>
+
+  @if (confirmDel()) {
+    <div class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 p-3 backdrop-blur-sm" (click)="confirmDel.set(false)">
+      <div class="w-full max-w-sm rounded-2xl p-4 shadow-2xl" [style.background]="brand.theme().navbar" [style.color]="brand.navbarText()" (click)="$event.stopPropagation()">
+        <h3 class="text-sm font-semibold">Delete task</h3>
+        <p class="mt-2 text-xs opacity-90">Delete this task and its files? This cannot be undone.</p>
+        <div class="mt-4 flex gap-2">
+          <button type="button" class="act px-4 py-2" (click)="confirmDel.set(false)">Cancel</button>
+          <button type="button" class="btn btn-block flex-1" style="background:#dc2626;color:#fff" (click)="remove()">Delete</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,108 @@
+@if (active()) {
+  <button type="button" class="act w-full py-2 text-center" (click)="show()">Request leave</button>
+}
+
+@if (open()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-3 backdrop-blur-sm" (click)="open.set(false)">
+    <div class="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl p-4 shadow-2xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+         [style.background]="brand.theme().navbar" [style.color]="brand.navbarText()"
+         (click)="$event.stopPropagation()">
+
+      <div class="line flex rounded-lg border p-0.5">
+        <button type="button" class="tab flex-1" [class.on]="tab() === 'new'" (click)="tab.set('new')">New request</button>
+        <button type="button" class="tab flex-1" [class.on]="tab() === 'mine'" (click)="tab.set('mine')">My requests ({{ mine().length }})</button>
+      </div>
+
+      @if (tab() === 'new') {
+        <div class="mt-3 flex items-center justify-between">
+          <button type="button" class="act" [disabled]="!canPrev()" (click)="go(-1)">‹</button>
+          <p class="text-xs font-semibold">{{ months[m()] }} {{ y() }}</p>
+          <button type="button" class="act" [disabled]="!canNext()" (click)="go(1)">›</button>
+        </div>
+
+        <div class="mt-2 grid grid-cols-7 gap-1 text-center text-[10px] font-semibold opacity-70">
+          @for (n of names; track n) { <span>{{ n }}</span> }
+        </div>
+        <div class="mt-1 grid grid-cols-7 gap-1">
+          @for (c of cells(); track c.iso) {
+            <button type="button" class="h-9 rounded-md text-xs font-semibold transition"
+                    [class]="cellCls(c)"
+                    [style.background]="c.on ? 'var(--accent)' : null"
+                    [style.color]="c.on ? 'var(--accent-text)' : null"
+                    (click)="pickDay(c)">{{ c.d }}</button>
+          }
+        </div>
+
+        <div class="mt-2 flex flex-wrap gap-3 text-[10px] opacity-80">
+          <span><i class="mr-1 inline-block h-2 w-2 rounded-full bg-sky-300"></i>Holiday / off</span>
+          <span><i class="mr-1 inline-block h-2 w-2 rounded-full bg-teal-300"></i>Leave taken</span>
+          <span><i class="mr-1 inline-block h-2 w-2 rounded-full" style="background:var(--accent)"></i>Selected</span>
+        </div>
+
+        @if (notice()) {
+          <p class="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">{{ notice() }}</p>
+        }
+
+        <p class="mt-3 text-[11px] font-semibold opacity-80">
+          Selected days: {{ selected().length }}{{ maxDays() !== null ? ' / ' + maxDays() : '' }}
+        </p>
+        <div class="mt-1 flex flex-wrap gap-1">
+          @for (d of selected(); track d) {
+            <span class="soft px-2 py-0.5 text-[11px]">{{ short(d) }}</span>
+          } @empty {
+            <span class="text-[11px] opacity-60">Tap the days you need.</span>
+          }
+        </div>
+
+        <label class="mb-1 mt-3 block text-[11px] font-semibold opacity-80">Reason <span style="color:#ef4444">*</span></label>
+        <textarea class="inp w-full" rows="3" maxlength="1000" placeholder="Why do you need leave?"
+                  [value]="reason()" (input)="reason.set(val($event))"></textarea>
+
+        <label class="mb-1 mt-3 block text-[11px] font-semibold opacity-80">Documents <span class="font-normal opacity-70">(optional · up to 5 · 8 MB each)</span></label>
+        <input class="inp w-full" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="pick($event)" />
+        @for (f of files(); track $index) {
+          <div class="soft mt-1.5 flex items-center gap-2 px-2 py-1.5">
+            <p class="min-w-0 flex-1 truncate text-xs">{{ f.name }}</p>
+            <button type="button" class="text-[11px] font-semibold" style="color:#ef4444" (click)="drop($index)">Remove</button>
+          </div>
+        }
+
+        @if (error()) { <p class="mt-2 text-xs" style="color:#dc2626">{{ error() }}</p> }
+
+        <div class="mt-4 flex gap-2">
+          <button type="button" class="act px-4 py-2" (click)="open.set(false)">Close</button>
+          <button type="button" class="btn btn-block flex-1" [disabled]="busy()" (click)="send()">
+            @if (busy()) { <span class="spin"></span>Sending… } @else { Send leave request }
+          </button>
+        </div>
+      } @else {
+        @for (r of mine(); track r.id) {
+          <div class="soft mt-2 p-2.5 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="STATUS[r.status].cls">{{ STATUS[r.status].label }}</span>
+              <span class="opacity-70">{{ dt12(r.createdAt) }}</span>
+              @if (r.status === 'pending') {
+                <button type="button" class="act ml-auto" style="color:#ef4444" (click)="cancel(r.id)">Cancel</button>
+              }
+            </div>
+            <p class="mt-1.5 flex flex-wrap gap-1">
+              @for (d of r.days; track d) { <span class="rounded bg-white/20 px-1.5 py-0.5 text-[11px]">{{ short(d) }}</span> }
+            </p>
+            <p class="mt-1.5 whitespace-pre-wrap opacity-90">{{ r.reason }}</p>
+            @if (r.status === 'pending') {
+              <p class="mt-1.5 text-[11px] opacity-80">Waiting for: {{ waiting(r) }}</p>
+            }
+            @if (r.decisionNote) {
+              <p class="mt-1.5 text-[11px] opacity-80">Note: {{ r.decisionNote }}</p>
+            }
+          </div>
+        } @empty {
+          <p class="py-8 text-center text-xs opacity-70">No leave requests yet.</p>
+        }
+
+        @if (error()) { <p class="mt-2 text-xs" style="color:#dc2626">{{ error() }}</p> }
+        <button type="button" class="act mt-3 w-full py-2 text-center" (click)="open.set(false)">Close</button>
+      }
+    </div>
+  </div>
+}

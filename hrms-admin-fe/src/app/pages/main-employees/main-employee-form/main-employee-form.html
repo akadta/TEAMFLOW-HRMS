@@ -1,0 +1,241 @@
+@let f = form();
+<div class="relative min-h-full overflow-hidden bg-gradient-to-br from-sky-50 via-white to-blue-100 p-3 sm:p-4">
+  <div class="pointer-events-none absolute -left-24 -top-24 h-96 w-96 rounded-full bg-blue-400/25 blur-[100px]"></div>
+  <div class="pointer-events-none absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-sky-300/30 blur-[100px]"></div>
+
+  <div class="relative mx-auto max-w-4xl">
+    <div class="flex items-end justify-between gap-2">
+      <div>
+        <h1 class="text-lg font-semibold tracking-tight text-slate-900">{{ isEdit ? 'Edit main employee' : 'Register main employee' }}</h1>
+        <p class="text-xs text-slate-500">
+          {{ isEdit ? f.employeeCode : 'Required: name, email, phone, role and password. Everything else is optional.' }}
+        </p>
+      </div>
+      <a routerLink="/main-employee/list"
+         class="shrink-0 rounded-lg border border-slate-200 bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">← Back</a>
+    </div>
+
+    @if (success()) {
+      <div class="mt-2 rounded-lg border border-emerald-300/60 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">{{ success() }}</div>
+    }
+
+    @if (loading()) {
+      <div class="mt-3 h-64 animate-pulse rounded-xl bg-slate-100"></div>
+    } @else if (loadError()) {
+      <div class="mt-3 rounded-lg border border-red-300/60 bg-red-50 px-3 py-2 text-xs text-red-600">{{ loadError() }}</div>
+    } @else {
+      <section class="mt-3 overflow-hidden rounded-xl border border-white/70 bg-white/60 shadow-[0_12px_30px_-15px_rgba(37,99,235,0.35)] backdrop-blur-xl">
+
+        <div class="flex gap-1 overflow-x-auto border-b border-slate-200/70 px-3 pt-1">
+          @for (t of tabs; track t.id) {
+            <button type="button" class="tabbtn" [class.on]="tab() === t.id" (click)="tab.set(t.id)">{{ t.label }}</button>
+          }
+        </div>
+
+        <div class="max-h-[calc(100vh-17rem)] overflow-y-auto p-4">
+          @switch (tab()) {
+
+            @case ('basic') {
+              <h3 class="sec">Basic information</h3>
+              <div class="grid2">
+                <div class="full">
+                  <label class="lbl">Employee ID <i>auto-generated · editable</i></label>
+                  <div class="flex gap-2">
+                    <input class="inp" maxlength="30" placeholder="MAIN-001A" [value]="f.employeeCode" (input)="set('employeeCode', upper($event, 30, true))" />
+                    <button type="button" class="ghost" (click)="autoCode()">Auto</button>
+                  </div>
+                </div>
+                <div class="full">
+                  <label class="lbl">Full name <span class="req">*</span></label>
+                  <input class="inp" maxlength="100" placeholder="Enter full name" [value]="f.name" (input)="set('name', val($event))" />
+                </div>
+                <div>
+                  <label class="lbl">Email <span class="req">*</span></label>
+                  <input class="inp" type="email" maxlength="150" placeholder="Login email" [value]="f.email" (input)="set('email', val($event))" />
+                </div>
+                <div>
+                  <label class="lbl">Phone number <span class="req">*</span></label>
+                  <input class="inp" inputmode="numeric" placeholder="10-digit phone number" [value]="f.phoneNumber" (input)="set('phoneNumber', digits($event, 10))" />
+                </div>
+                <div>
+                  <label class="lbl">Emergency number <i>(optional)</i></label>
+                  <input class="inp" inputmode="numeric" placeholder="10-digit emergency number" [value]="f.emergencyNumber" (input)="set('emergencyNumber', digits($event, 10))" />
+                </div>
+                <div>
+                  <label class="lbl">Official mail <i>(optional)</i></label>
+                  <input class="inp" type="email" maxlength="150" placeholder="Official email" [value]="f.officialEmail" (input)="set('officialEmail', val($event))" />
+                </div>
+              </div>
+            }
+
+            @case ('personal') {
+              <h3 class="sec">Personal details</h3>
+              <div class="grid2">
+                <div>
+                  <label class="lbl">Date of birth <i>(optional)</i></label>
+                  <input class="inp" type="date" [value]="f.dateOfBirth" (input)="set('dateOfBirth', val($event))" />
+                </div>
+                <div>
+                  <label class="lbl">Gender <i>(optional)</i></label>
+                  <select class="inp" (change)="set('gender', val($event))">
+                    <option value="">Select gender</option>
+                    @for (o of genders; track o) { <option [value]="o" [selected]="o === f.gender">{{ o }}</option> }
+                  </select>
+                </div>
+                <div>
+                  <label class="lbl">Blood group <i>(optional)</i></label>
+                  <select class="inp" (change)="set('bloodGroup', val($event))">
+                    <option value="">Select blood group</option>
+                    @for (o of bloodGroups; track o) { <option [value]="o" [selected]="o === f.bloodGroup">{{ o }}</option> }
+                  </select>
+                </div>
+                <div>
+                  <label class="lbl">Marital status <i>(optional)</i></label>
+                  <select class="inp" (change)="set('maritalStatus', val($event))">
+                    <option value="">Select status</option>
+                    @for (o of maritals; track o) { <option [value]="o" [selected]="o === f.maritalStatus">{{ o }}</option> }
+                  </select>
+                </div>
+                <div>
+                  <label class="lbl">Nationality <i>(optional)</i></label>
+                  <input class="inp" maxlength="50" placeholder="e.g. Indian" [value]="f.nationality" (input)="set('nationality', val($event))" />
+                </div>
+                <div>
+                  <label class="lbl">Aadhar number <i>(optional)</i></label>
+                  <input class="inp" inputmode="numeric" placeholder="12-digit Aadhar number" [value]="f.aadharNumber" (input)="set('aadharNumber', digits($event, 12))" />
+                </div>
+                <div class="full">
+                  <label class="lbl">PAN number <i>(optional)</i></label>
+                  <input class="inp" placeholder="AAAPA0000A" [value]="f.panNumber" (input)="set('panNumber', upper($event, 10))" />
+                </div>
+                <div class="full">
+                  <label class="lbl">Address <i>(optional)</i></label>
+                  <textarea class="inp" maxlength="500" placeholder="Complete residential address" [value]="f.address" (input)="set('address', val($event))"></textarea>
+                </div>
+                <div class="full">
+                  <label class="lbl">Profile picture <i>(optional · image, max 3 MB)</i></label>
+                  <div class="flex items-center gap-3">
+                    @if (avatarSrc()) {
+                      <img class="avatar" [src]="avatarSrc()" alt="Profile preview" />
+                    } @else {
+                      <div class="avatar flex items-center justify-center text-slate-300">
+                        <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                      </div>
+                    }
+                    <input #pf class="inp" type="file" accept="image/*" (change)="onProfile($event)" />
+                    @if (avatarSrc()) {
+                      <button type="button" class="del shrink-0" (click)="clearProfile(pf)">Remove</button>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+            @case ('professional') {
+              <h3 class="sec">Professional details</h3>
+              <div class="grid2">
+                <div class="full">
+                  <label class="lbl">Highest qualification <i>(optional)</i></label>
+                  <input class="inp" maxlength="100" placeholder="e.g. Bachelor, Master, PhD" [value]="f.highestQualification" (input)="set('highestQualification', val($event))" />
+                </div>
+                <div>
+                  <label class="lbl">Institution <i>(optional)</i></label>
+                  <input class="inp" maxlength="150" placeholder="Name of institute/university" [value]="f.institution" (input)="set('institution', val($event))" />
+                </div>
+                <div>
+                  <label class="lbl">Year of passing <i>(optional)</i></label>
+                  <input class="inp" inputmode="numeric" placeholder="e.g. 2020" [value]="f.yearOfPassing" (input)="set('yearOfPassing', digits($event, 4))" />
+                </div>
+              </div>
+            }
+
+            @case ('designation') {
+              <h3 class="sec">Designation</h3>
+              <div class="grid2">
+                <div class="full">
+                  <label class="lbl">Role <span class="req">*</span><i>decides who can sign in</i></label>
+                  <select class="inp" (change)="set('roleId', val($event))">
+                    <option value="">Select role</option>
+                    @for (r of roleOptions(); track r.id) {
+                      <option [value]="r.id" [selected]="'' + r.id === f.roleId">{{ r.name }}{{ r.isActive ? '' : ' (inactive)' }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="full">
+                  <label class="lbl">Work type <i>(optional)</i></label>
+                  <div class="grid grid-cols-3 gap-2">
+                    @for (w of workTypes; track w.id) {
+                      <button type="button" class="wt" [class.on]="f.workType === w.id" (click)="set('workType', f.workType === w.id ? '' : w.id)">
+                        <span>{{ w.label }}</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+                <div class="full">
+                  <div class="flex items-center justify-between">
+                    <label class="lbl">Reporting managers <i>(optional · main team only)</i></label>
+                    <button type="button" class="ghost" (click)="pickerOpen.set(true)">+ Add manager</button>
+                  </div>
+
+                  @if (managers().length === 0) {
+                    <p class="rounded-lg border border-dashed border-slate-300 bg-white/60 px-3 py-2 text-[11px] text-slate-500">
+                      No manager. This person is at the top level of the main team.
+                    </p>
+                  }
+
+                  @for (m of managers(); track m.userId) {
+                    <div class="row">
+                      <div class="min-w-0 flex-1">
+                        <p class="truncate text-xs font-semibold text-slate-800">{{ m.name }}</p>
+                        <p class="truncate text-[11px] text-slate-500">{{ m.code }}{{ m.role ? ' · ' + m.role : '' }}</p>
+                      </div>
+                      <button type="button" class="del" (click)="removeManager(m.userId)">Remove</button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            @case ('security') {
+              <h3 class="sec">{{ isEdit ? 'Reset login password' : 'Login password' }}</h3>
+              @if (isEdit) {
+                <p class="mb-2 text-xs text-slate-500">Leave empty to keep the current password.</p>
+              }
+              <div class="grid2">
+                <div>
+                  <label class="lbl">Password @if (!isEdit) { <span class="req">*</span> }<i>min 8 · letter + number</i></label>
+                  <input class="inp" maxlength="64" autocomplete="new-password" placeholder="Password" [type]="showPw() ? 'text' : 'password'" [value]="f.password" (input)="set('password', val($event))" />
+                </div>
+                <div>
+                  <label class="lbl">Confirm password @if (!isEdit) { <span class="req">*</span> }</label>
+                  <input class="inp" maxlength="64" autocomplete="new-password" placeholder="Confirm password" [type]="showPw() ? 'text' : 'password'" [value]="f.confirmPassword" (input)="set('confirmPassword', val($event))" />
+                </div>
+                <label class="full flex items-center gap-2 text-xs text-slate-600">
+                  <input type="checkbox" [checked]="showPw()" (change)="showPw.set(!showPw())" /> Show passwords
+                </label>
+              </div>
+            }
+          }
+        </div>
+
+        <div class="flex flex-col gap-2 border-t border-slate-200/70 bg-white/50 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <p class="min-w-0 flex-1 text-xs text-red-600">{{ error() }}</p>
+          <button type="button" (click)="submit()" [disabled]="saving()"
+                  class="shrink-0 rounded-lg bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow shadow-blue-600/30 transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-70">
+            {{ saving() ? 'Saving…' : (isEdit ? 'Save changes' : 'Register main employee') }}
+          </button>
+        </div>
+      </section>
+    }
+  </div>
+
+  @if (pickerOpen()) {
+    <app-manager-picker
+      [mainOnly]="true"
+      [excludeUserId]="selfUserId()"
+      [selectedIds]="managerIds()"
+      [message]="pickerMsg()"
+      (picked)="addManager($event)"
+      (closed)="pickerOpen.set(false)" />
+  }
+</div>

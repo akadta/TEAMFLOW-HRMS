@@ -1,0 +1,130 @@
+<div class="mx-auto max-w-7xl space-y-4 p-3 sm:p-4"
+     [style.--accent]="brand.theme().accent"
+     [style.--accent-text]="brand.accentText()"
+     [style.--card]="brand.theme().navbar">
+
+  <!-- header -->
+  <div class="flex flex-wrap items-end gap-2">
+    <div class="mr-auto">
+      <h1 class="text-xl font-bold tracking-tight" [style.color]="brand.contentText()">{{ greeting() }}</h1>
+      <p class="flex items-center gap-1.5 text-xs opacity-80" [style.color]="brand.contentText()">
+        <span class="h-2 w-2 animate-pulse rounded-full bg-emerald-400"></span> Live · updated {{ stampText() }}
+      </p>
+    </div>
+    <div class="line flex rounded-lg border p-0.5" [style.color]="brand.contentText()">
+      @for (r of ranges; track r) { <button type="button" class="tab" [class.on]="days() === r" (click)="setDays(r)">{{ r }} days</button> }
+    </div>
+  </div>
+
+  <!-- my day -->
+  <div class="grid gap-4 lg:grid-cols-[22rem_1fr]">
+    <app-attendance-card />
+
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      @for (k of meKpis(); track k.label) {
+        <div class="rounded-xl bg-gradient-to-br p-3 text-white shadow-lg" [class]="k.cls">
+          <p class="text-[11px] font-semibold uppercase tracking-wide opacity-80">{{ k.label }}</p>
+          <p class="mt-1 text-2xl font-bold">{{ k.value }}</p>
+          <p class="text-[11px] opacity-80">{{ k.sub }}</p>
+        </div>
+      } @empty {
+        @for (i of [1, 2, 3, 4, 5, 6]; track i) { <div class="h-24 animate-pulse rounded-xl bg-white/10"></div> }
+      }
+    </div>
+  </div>
+
+  <!-- team (owner: whole company, manager: direct reports) -->
+  @if (hasTeam()) {
+    <div>
+      <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide" [style.color]="brand.contentText()">Team overview</h2>
+      <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+        @for (k of teamKpis(); track k.label) {
+          <div class="rounded-xl bg-gradient-to-br p-3 text-white shadow-lg" [class]="k.cls">
+            <p class="text-[11px] font-semibold uppercase tracking-wide opacity-80">{{ k.label }}</p>
+            <p class="mt-1 text-2xl font-bold">{{ k.value }}</p>
+            <p class="text-[11px] opacity-80">{{ k.sub }}</p>
+          </div>
+        }
+      </div>
+
+      <div class="mt-4 grid gap-4 lg:grid-cols-3">
+        <section class="rounded-xl p-3 lg:col-span-2" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+          <h3 class="mb-2 text-xs font-semibold">Attendance · last {{ days() }} days</h3>
+          <div class="h-60"><app-chart [config]="tTrend()" /></div>
+        </section>
+        <section class="rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+          <h3 class="mb-2 text-xs font-semibold">Today</h3>
+          <div class="h-60"><app-chart [config]="tToday()" /></div>
+        </section>
+
+        <section class="rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+          <h3 class="mb-2 text-xs font-semibold">How late (all days in range)</h3>
+          <div class="h-56"><app-chart [config]="tLate()" /></div>
+        </section>
+        <section class="rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+          <h3 class="mb-2 text-xs font-semibold">Today by role</h3>
+          <div class="h-56"><app-chart [config]="tRole()" /></div>
+        </section>
+        <section class="rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+          <h3 class="mb-2 text-xs font-semibold">Leave in the next 7 days</h3>
+          <div class="h-56"><app-chart [config]="tLeave7()" /></div>
+        </section>
+
+        <section class="rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+          <h3 class="mb-2 text-xs font-semibold">Tasks by status</h3>
+          <div class="h-56"><app-chart [config]="tTasks()" /></div>
+        </section>
+        <section class="rounded-xl p-3 lg:col-span-2" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+          <h3 class="mb-2 text-xs font-semibold">Tasks created vs completed</h3>
+          <div class="h-56"><app-chart [config]="tTaskTrend()" /></div>
+        </section>
+
+        <!-- short lists -->
+        <section class="rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+          <h3 class="mb-2 text-xs font-semibold">Absent today</h3>
+          @for (a of team()!.absentToday; track a.code + a.name) {
+            <div class="soft mb-1.5 flex items-center gap-2 px-2.5 py-1.5 text-xs"><span class="h-2 w-2 rounded-full bg-red-400"></span><span class="font-semibold">{{ a.name }}</span><span class="ml-auto opacity-70">{{ a.code }}</span></div>
+          } @empty { <p class="py-3 text-center text-[11px] opacity-70">Nobody is marked absent.</p> }
+        </section>
+        <section class="rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+          <h3 class="mb-2 text-xs font-semibold">On leave today</h3>
+          @for (n of team()!.onLeaveToday; track n) {
+            <div class="soft mb-1.5 flex items-center gap-2 px-2.5 py-1.5 text-xs"><span class="h-2 w-2 rounded-full bg-teal-400"></span><span class="font-semibold">{{ n }}</span></div>
+          } @empty { <p class="py-3 text-center text-[11px] opacity-70">Nobody is on leave.</p> }
+        </section>
+        <section class="rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+          <h3 class="mb-2 text-xs font-semibold">Overdue tasks</h3>
+          @for (t of team()!.tasks.overdueList; track t.id) {
+            <div class="soft mb-1.5 px-2.5 py-1.5 text-xs">
+              <p class="truncate font-semibold">{{ t.title }}</p>
+              <p class="flex items-center gap-2 text-[11px] opacity-80"><span class="truncate">{{ t.name }}</span><span class="ml-auto whitespace-nowrap text-red-400">due {{ dt12(t.dueAt) }}</span><span>{{ t.progress }}%</span></p>
+            </div>
+          } @empty { <p class="py-3 text-center text-[11px] opacity-70">No overdue tasks.</p> }
+        </section>
+      </div>
+    </div>
+  }
+
+  <!-- my activity -->
+  <div>
+    <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide" [style.color]="brand.contentText()">My activity</h2>
+    <div class="grid gap-4 lg:grid-cols-3">
+      <section class="rounded-xl p-3 lg:col-span-2" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+        <h3 class="mb-2 text-xs font-semibold">My attendance · last {{ days() }} days</h3>
+        <div class="h-52"><app-chart [config]="mTrend()" /></div>
+      </section>
+      <section class="rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+        <h3 class="mb-2 text-xs font-semibold">My tasks</h3>
+        <div class="h-52"><app-chart [config]="mTasks()" /></div>
+      </section>
+      <section class="rounded-xl p-3 lg:col-span-2" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+        <h3 class="mb-2 text-xs font-semibold">Minutes late each day</h3>
+        <div class="h-48"><app-chart [config]="mLate()" /></div>
+      </section>
+      <section class="rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+        <h3 class="mb-2 text-xs font-semibold">My tasks created vs completed</h3>
+        <div class="h-48"><app-chart [config]="mTaskTrend()" /></div>
+      </section>
+    </div>
+  </div>
+</div>

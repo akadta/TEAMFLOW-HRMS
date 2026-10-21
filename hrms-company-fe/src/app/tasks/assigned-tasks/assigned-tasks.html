@@ -1,0 +1,77 @@
+<div class="mx-auto max-w-6xl p-3 sm:p-4"
+     [style.--accent]="brand.theme().accent"
+     [style.--accent-text]="brand.accentText()"
+     [style.--card]="brand.theme().navbar">
+
+  <div>
+    <h1 class="text-lg font-semibold tracking-tight" [style.color]="brand.contentText()">Assigned to me</h1>
+    <p class="text-xs opacity-70" [style.color]="brand.contentText()">Tasks your manager, owner or the main team gave you · {{ shown().length }} of {{ items().length }}</p>
+  </div>
+
+  <section class="mt-3 rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+    <div class="flex flex-wrap gap-1.5">
+      @for (c of chips; track c) { <button type="button" class="chip" [class.on]="status() === c" (click)="status.set(c)">{{ c === 'all' ? 'All' : TS[c].label }} <span class="ml-1 opacity-70">{{ counts()[c] || 0 }}</span></button> }
+    </div>
+    <div class="mt-2.5 flex flex-wrap items-center gap-2">
+      <input class="inp w-48" placeholder="Search tasks" [value]="q()" (input)="q.set(val($event))" />
+      <label class="flex items-center gap-1.5 text-xs"><input type="checkbox" [checked]="late()" (change)="late.set(!late())" /> Overdue only</label>
+    </div>
+
+    <div class="line mt-2.5 max-h-[calc(100vh-19rem)] overflow-auto rounded-lg border">
+      <table class="tbl w-full min-w-[860px] text-left text-xs">
+        <thead><tr><th>Task</th><th>Due</th><th>Progress</th><th>Status</th><th>Approval</th><th class="text-right">Actions</th></tr></thead>
+        <tbody>
+          @for (t of shown(); track t.id) {
+            <tr class="clickable" (click)="sel.set(t)">
+              <td class="max-w-[18rem]"><p class="truncate font-semibold">{{ t.title }}</p>@if (t.files.length) { <p class="text-[11px] opacity-70">{{ t.files.length }} file(s)</p> }</td>
+              <td class="whitespace-nowrap text-[11px]"><span [style.color]="overdue(t) ? '#ef4444' : null">{{ t.dueAt ? dt12(t.dueAt) : '—' }}</span></td>
+              <td (click)="$event.stopPropagation()"><div class="flex items-center gap-2"><input type="range" min="0" max="100" step="5" class="w-24" [disabled]="locked(t)" [value]="t.progress" (change)="setProgress(t, $event)" /><span class="w-9 text-[11px]">{{ t.progress }}%</span></div></td>
+              <td (click)="$event.stopPropagation()"><select class="inp !py-1" [disabled]="locked(t)" (change)="setStatus(t, $event)">@for (s of statuses; track s) { <option [value]="s" [selected]="s === t.status">{{ TS[s].label }}</option> }</select></td>
+              <td><span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="AP[t.approval].cls">{{ AP[t.approval].label }}</span></td>
+              <td class="whitespace-nowrap text-right" (click)="$event.stopPropagation()">
+                @if (t.status !== 'done' && !locked(t)) { <button type="button" class="act" (click)="complete(t)">Complete</button> }
+                <button type="button" class="act ml-1" (click)="sel.set(t)">Open</button>
+              </td>
+            </tr>
+          } @empty { <tr><td colspan="6" class="py-8 text-center opacity-70">{{ loading() ? 'Loading…' : 'Nothing assigned to you yet.' }}</td></tr> }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  @if (sel(); as t) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-3 backdrop-blur-sm" (click)="sel.set(null)">
+      <div class="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl p-4 shadow-2xl" [style.background]="brand.theme().navbar" [style.color]="brand.navbarText()" (click)="$event.stopPropagation()">
+        <div class="flex items-start justify-between gap-2"><h3 class="text-sm font-semibold">{{ t.title }}</h3><span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="TS[t.status].cls">{{ TS[t.status].label }}</span></div>
+        <p class="mt-1 text-[11px] opacity-70">Received {{ dt12(t.startAt) }} · due {{ t.dueAt ? dt12(t.dueAt) : '—' }}</p>
+        <div class="mt-2 flex items-center gap-2"><div class="h-2.5 flex-1 overflow-hidden rounded-full bg-white/20"><div class="h-full rounded-full" style="background:var(--accent)" [style.width.%]="t.progress"></div></div><span class="text-xs font-semibold">{{ t.progress }}%</span></div>
+        @if (t.description) { <p class="soft mt-3 whitespace-pre-wrap p-3 text-xs">{{ t.description }}</p> }
+        @if (t.files.length) {
+          <p class="mt-3 text-[11px] font-semibold opacity-80">Files ({{ t.files.length }})</p>
+          <div class="mt-1 space-y-2">
+            @for (f of t.files; track f.id) {
+              @if (isImage(f.filePath)) { <a [href]="fileUrl(f.filePath)" target="_blank" rel="noopener"><img [src]="fileUrl(f.filePath)" [alt]="f.fileName" class="max-h-48 rounded-lg" /></a> }
+              @else if (isVideo(f.filePath)) { <video controls preload="metadata" class="w-full rounded-lg" [src]="fileUrl(f.filePath)"></video> }
+              @else { <a class="soft block truncate px-2.5 py-1.5 text-xs font-medium underline" [href]="fileUrl(f.filePath)" target="_blank" rel="noopener">{{ f.fileName }} ({{ fmtSize(f.size) }})</a> }
+            }
+          </div>
+        }
+        <div class="mt-3 flex items-center gap-2"><span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="AP[t.approval].cls">{{ AP[t.approval].label }}</span>@if (t.approvalNote) { <span class="text-[11px] opacity-80">Note: {{ t.approvalNote }}</span> }</div>
+        @if (t.approvals.length) { <div class="mt-2 space-y-1">@for (a of t.approvals; track a.id) { <div class="soft flex items-center gap-2 px-2.5 py-1.5 text-[11px]"><span class="font-semibold">{{ group[a.group] ?? a.group }}</span><span class="min-w-0 flex-1 truncate">{{ a.approver ?? '—' }}</span><span class="font-semibold capitalize">{{ a.decision }}</span></div> }</div> }
+        <div class="mt-4 flex gap-2">
+          <button type="button" class="act px-4 py-2" (click)="sel.set(null)">Close</button>
+          @if (t.status !== 'done' && !locked(t)) { <button type="button" class="btn btn-block flex-1" (click)="complete(t)">Mark complete</button> }
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (dialog(); as d) {
+    <div class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 p-3 backdrop-blur-sm" (click)="dialog.set(null)">
+      <div class="w-full max-w-sm rounded-2xl p-4 shadow-2xl" [style.background]="brand.theme().navbar" [style.color]="brand.navbarText()" (click)="$event.stopPropagation()">
+        <h3 class="text-sm font-semibold">{{ d.title }}</h3><p class="mt-2 text-xs opacity-90">{{ d.text }}</p>
+        <button type="button" class="btn btn-block mt-4" (click)="dialog.set(null)">OK</button>
+      </div>
+    </div>
+  }
+</div>

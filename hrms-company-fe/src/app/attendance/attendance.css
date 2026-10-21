@@ -1,0 +1,186 @@
+.inp {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(100, 116, 139, 0.4);
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f172a;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.75rem;
+  outline: none;
+}
+.inp:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+/* buttons */
+.btn {
+  display: inline-block;
+  cursor: pointer;
+  border: 0;
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  background: var(--accent);
+  color: var(--accent-text);
+  transition: filter 0.15s;
+}
+.btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.btn-block {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  font-size: 0.8rem;
+}
+.btn-off {
+  background: rgba(128, 128, 128, 0.25);
+  color: inherit;
+}
+.btn-warn {
+  background: #f59e0b;
+  color: #fff;
+}
+.btn-ok {
+  background: #059669;
+  color: #fff;
+}
+.btn-no {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* small outlined button */
+.act {
+  cursor: pointer;
+  border-radius: 0.4rem;
+  border: 1px solid rgba(128, 128, 128, 0.5);
+  background: transparent;
+  color: inherit;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-block;
+}
+.act:hover:not(:disabled) {
+  background: rgba(128, 128, 128, 0.15);
+}
+.act:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* tabs and chips */
+.tab,
+.chip {
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+.tab {
+  border-radius: 0.4rem;
+  padding: 0.35rem 0.8rem;
+}
+.chip {
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+}
+.tab:hover,
+.chip:hover {
+  background: rgba(128, 128, 128, 0.15);
+}
+.tab.on,
+.chip.on {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+
+/* neutral box that works on any panel colour */
+.soft {
+  background: rgba(128, 128, 128, 0.14);
+  border-radius: 0.5rem;
+}
+
+.line {
+  border-color: rgba(128, 128, 128, 0.25);
+}
+
+.tbl th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, currentColor 8%, var(--card));
+}
+.tbl td {
+  padding: 0.4rem 0.65rem;
+  border-top: 1px solid rgba(128, 128, 128, 0.2);
+}
+.tbl tbody tr:hover {
+  background: rgba(128, 128, 128, 0.1);
+}
+.tbl tbody tr.clickable {
+  cursor: pointer;
+}
+
+/* spinner */
+.spin {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-right: 0.4rem;
+  vertical-align: -2px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* colour swatches */
+.swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+.swatch i {
+  display: block;
+  height: 1.9rem;
+  width: 1.9rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+.swatch.on i {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

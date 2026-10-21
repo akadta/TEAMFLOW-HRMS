@@ -1,0 +1,220 @@
+<div class="min-h-full bg-gradient-to-br from-sky-50 via-white to-blue-100 p-3 sm:p-4">
+  <div class="mx-auto max-w-6xl space-y-3">
+
+    <button type="button" class="text-xs font-semibold text-blue-700 hover:underline" (click)="back()">‹ Back to employees</button>
+
+    @if (error()) {
+      <div class="rounded-lg border border-red-300/60 bg-red-50 px-3 py-2 text-xs text-red-600">{{ error() }}</div>
+    }
+
+    @if (emp(); as e) {
+      <section class="flex flex-wrap items-center gap-3 rounded-xl border border-white/70 bg-white/70 p-3 backdrop-blur-xl">
+        @if (e.profilePicture) {
+          <img [src]="fileUrl(e.profilePicture)" alt="" class="h-12 w-12 rounded-full object-cover" />
+        } @else {
+          <div class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-base font-bold text-blue-700">{{ e.name.charAt(0).toUpperCase() }}</div>
+        }
+        <div class="mr-auto min-w-0">
+          <p class="truncate text-sm font-semibold text-slate-900">{{ e.name }} <span class="font-normal text-slate-500">· {{ e.employeeCode }}</span></p>
+          <p class="truncate text-[11px] text-slate-500">{{ company() }} · {{ e.role ?? 'No role' }} · {{ e.email }}{{ e.phone ? ' · ' + e.phone : '' }}</p>
+        </div>
+        <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="e.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'">{{ e.isActive ? 'Active' : 'Inactive' }}</span>
+      </section>
+    }
+
+    <div class="flex flex-wrap items-center gap-2">
+      @for (p of presets; track p.id) {
+        <button type="button" class="rounded-lg bg-white/70 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-white" (click)="preset(p.id)">{{ p.label }}</button>
+      }
+      <input [class]="inp" type="date" [value]="from()" (change)="from.set(val($event)); load()" />
+      <input [class]="inp" type="date" [value]="to()" (change)="to.set(val($event)); load()" />
+
+      <button type="button" class="ml-auto rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow shadow-emerald-600/30 hover:bg-emerald-500 disabled:opacity-60" [disabled]="!filtered().length || !!busy()" (click)="ask('excel')">Excel</button>
+      <button type="button" class="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow shadow-red-600/30 hover:bg-red-500 disabled:opacity-60" [disabled]="!filtered().length || !!busy()" (click)="ask('pdf')">PDF</button>
+    </div>
+
+    <div class="flex w-fit rounded-lg bg-white/70 p-0.5 shadow-sm ring-1 ring-slate-200">
+      <button type="button" class="rounded-md px-4 py-1.5 text-xs font-semibold transition" [class]="tab() === 'daily' ? 'bg-blue-600 text-white shadow' : 'text-slate-600 hover:bg-white'" (click)="tab.set('daily')">Daily report</button>
+      <button type="button" class="rounded-md px-4 py-1.5 text-xs font-semibold transition" [class]="tab() === 'requests' ? 'bg-blue-600 text-white shadow' : 'text-slate-600 hover:bg-white'" (click)="tab.set('requests')">Requests ({{ reqs().length }})</button>
+      <button type="button" class="rounded-md px-4 py-1.5 text-xs font-semibold transition" [class]="tab() === 'checkins' ? 'bg-blue-600 text-white shadow' : 'text-slate-600 hover:bg-white'" (click)="tab.set('checkins')">Check-ins ({{ slots().length }})</button>
+      <button type="button" class="rounded-md px-4 py-1.5 text-xs font-semibold transition" [class]="tab() === 'logins' ? 'bg-blue-600 text-white shadow' : 'text-slate-600 hover:bg-white'" (click)="tab.set('logins')">Logins ({{ logins().length }})</button>
+    </div>
+
+    @if (tab() === 'daily') {
+      <div class="flex flex-wrap gap-1.5">
+        @for (c of chips; track c) {
+          <button type="button" class="rounded-lg px-3 py-1.5 text-xs font-semibold transition" [class]="status() === c ? 'bg-slate-900 text-white shadow' : 'bg-white/70 text-slate-600 ring-1 ring-slate-200 hover:bg-white'" (click)="status.set(c)">{{ c === 'all' ? 'All' : STATUS[c].label }} <span class="ml-1 opacity-70">{{ counts()[c] || 0 }}</span></button>
+        }
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <select [class]="inp" (change)="bandIdx.set(num($event))">
+          <option value="-1">Any lateness</option>
+          @for (b of BANDS; track $index) { <option [value]="$index" [selected]="$index === bandIdx()">{{ b.label }}</option> }
+        </select>
+        <select [class]="inp" (change)="source.set(val($event))">
+          <option value="all" [selected]="source() === 'all'">All sources</option>
+          <option value="normal" [selected]="source() === 'normal'">Marked</option>
+          <option value="request" [selected]="source() === 'request'">Via request</option>
+          <option value="override" [selected]="source() === 'override'">Override</option>
+        </select>
+        <select [class]="inp" (change)="dayIdx.set(num($event))">
+          <option value="-1">Any weekday</option>
+          @for (d of DAYS; track $index) { <option [value]="$index" [selected]="$index === dayIdx()">{{ d }}</option> }
+        </select>
+        <input [class]="inp + ' w-44'" placeholder="Search note" [value]="q()" (input)="q.set(val($event))" />
+        <button type="button" class="rounded-lg bg-white/70 px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-white" (click)="asc.set(!asc())">{{ asc() ? 'Oldest first' : 'Newest first' }}</button>
+        <button type="button" class="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200" (click)="reset()">Reset</button>
+      </div>
+
+      <section class="overflow-hidden rounded-xl border border-white/70 bg-white/70 shadow-[0_12px_30px_-15px_rgba(37,99,235,0.35)] backdrop-blur-xl">
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[820px] text-left text-xs">
+            <thead class="bg-slate-50/80 text-[11px] uppercase tracking-wide text-slate-500">
+              <tr>
+                <th class="px-3 py-2">Date</th>
+                <th class="px-3 py-2">Attendance</th>
+                <th class="px-3 py-2">Status</th>
+                <th class="px-3 py-2">Check-in</th>
+                <th class="px-3 py-2">Late</th>
+                <th class="px-3 py-2">Source</th>
+                <th class="px-3 py-2">Note</th>
+                <th class="px-3 py-2">Proof</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              @for (r of pageRows(); track r.date) {
+                <tr class="hover:bg-blue-50/50">
+                  <td class="whitespace-nowrap px-3 py-2 text-slate-700">{{ dayLabel(r.date) }}</td>
+                  <td class="px-3 py-2"><span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="RES[result(r.status)]">{{ result(r.status) }}</span></td>
+                  <td class="px-3 py-2"><span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="STATUS[r.status].cls">{{ STATUS[r.status].label }}</span></td>
+                  <td class="whitespace-nowrap px-3 py-2 text-slate-700">{{ r.checkInAt ? t12(r.checkInAt) : '—' }}</td>
+                  <td class="px-3 py-2">
+                    @if (r.checkInAt) { <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="band(r.lateMinutes).cls">{{ lateText(r.lateMinutes) }}</span> } @else { <span class="text-slate-400">—</span> }
+                  </td>
+                  <td class="px-3 py-2 text-slate-600">{{ srcLabel(r.source) || '—' }}</td>
+                  <td class="px-3 py-2 text-slate-600">{{ r.note ?? '' }}</td>
+                  <td class="whitespace-nowrap px-3 py-2">
+                    @if (r.photoPath) { <a class="rounded bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 hover:bg-blue-100" [href]="fileUrl(r.photoPath)" target="_blank" rel="noopener">Photo</a> }
+                    @if (r.lat !== null && r.lng !== null) { <a class="ml-1 rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100" [href]="mapUrl(r.lat, r.lng)" target="_blank" rel="noopener">Map</a> }
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="8" class="px-3 py-8 text-center text-slate-500">{{ loading() ? 'Loading…' : 'No rows.' }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="flex items-center justify-between border-t border-slate-200/70 bg-white/50 px-3 py-2 text-xs text-slate-600">
+          <span>{{ filtered().length }} rows · page {{ cur() + 1 }} / {{ pages() }}</span>
+          <div class="flex gap-1.5">
+            <button type="button" class="rounded-md bg-slate-100 px-3 py-1 font-semibold hover:bg-slate-200 disabled:opacity-50" [disabled]="cur() === 0" (click)="page.set(cur() - 1)">Prev</button>
+            <button type="button" class="rounded-md bg-slate-100 px-3 py-1 font-semibold hover:bg-slate-200 disabled:opacity-50" [disabled]="cur() >= pages() - 1" (click)="page.set(cur() + 1)">Next</button>
+          </div>
+        </div>
+      </section>
+    } @else if (tab() === 'requests') {
+      <div class="flex flex-wrap gap-1.5">
+        @for (c of reqChips; track c) {
+          <button type="button" class="rounded-lg px-3 py-1.5 text-xs font-semibold transition" [class]="reqStatus() === c ? 'bg-slate-900 text-white shadow' : 'bg-white/70 text-slate-600 ring-1 ring-slate-200 hover:bg-white'" (click)="reqStatus.set(c)">{{ c === 'all' ? 'All' : STATUS[c].label }} <span class="ml-1 opacity-70">{{ reqCounts()[c] || 0 }}</span></button>
+        }
+      </div>
+      <div class="space-y-2">
+        @for (r of reqShown(); track r.id) {
+          <section class="rounded-xl border border-white/70 bg-white/70 p-3 backdrop-blur-xl">
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              <span class="font-semibold text-slate-800">{{ dayLabel(r.date) }}</span>
+              <span class="text-slate-500">· sent {{ dt12(r.requestedAt) }}</span>
+              <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="band(r.lateMinutes).cls">{{ lateText(r.lateMinutes) }}</span>
+              <span class="ml-auto rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="STATUS[r.status].cls">{{ STATUS[r.status].label }}</span>
+            </div>
+            <p class="mt-2 whitespace-pre-wrap rounded-lg bg-slate-50 p-2.5 text-xs text-slate-700">{{ r.reason }}</p>
+            @if (r.files.length) {
+              <div class="mt-2 flex flex-wrap gap-1.5">
+                @for (f of r.files; track f.filePath) { <a class="max-w-[16rem] truncate rounded-lg bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700 hover:bg-blue-100" [href]="fileUrl(f.filePath)" target="_blank" rel="noopener">{{ f.fileName }}</a> }
+              </div>
+            }
+            @if (r.status !== 'pending') {
+              <p class="mt-2 text-[11px] text-slate-500">{{ STATUS[r.status].label }} by {{ r.decidedBy ?? '—' }} · {{ dt12(r.decidedAt) }}{{ r.decisionNote ? ' · ' + r.decisionNote : '' }}</p>
+            }
+          </section>
+        } @empty {
+          <p class="rounded-xl border border-dashed border-slate-300 bg-white/60 p-8 text-center text-xs text-slate-500">{{ loading() ? 'Loading…' : 'No requests in this period.' }}</p>
+        }
+      </div>
+    } @else if (tab() === 'checkins') {
+      <div class="flex flex-wrap gap-1.5">
+        @for (c of slotChips; track c) {
+          <button type="button" class="rounded-lg px-3 py-1.5 text-xs font-semibold transition" [class]="slotStatus() === c ? 'bg-slate-900 text-white shadow' : 'bg-white/70 text-slate-600 ring-1 ring-slate-200 hover:bg-white'" (click)="slotStatus.set(c)">{{ slotLabel[c] }} <span class="ml-1 opacity-70">{{ slotCounts()[c] || 0 }}</span></button>
+        }
+      </div>
+      <section class="overflow-hidden rounded-xl border border-white/70 bg-white/70 backdrop-blur-xl">
+        <div class="max-h-[60vh] overflow-auto">
+          <table class="w-full min-w-[560px] text-left text-xs">
+            <thead class="sticky top-0 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500"><tr><th class="px-3 py-2">Date</th><th class="px-3 py-2">Window</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Checked in at</th><th class="px-3 py-2">Location</th></tr></thead>
+            <tbody class="divide-y divide-slate-100">
+              @for (s of slotShown(); track s.date + s.from) {
+                <tr class="hover:bg-blue-50/50">
+                  <td class="whitespace-nowrap px-3 py-2 text-slate-700">{{ dayLabel(s.date) }}</td>
+                  <td class="whitespace-nowrap px-3 py-2 text-slate-700">{{ hhmm(s.from) }} – {{ hhmm(s.to) }}</td>
+                  <td class="px-3 py-2"><span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="slotCls[s.status]">{{ slotLabel[s.status] }}</span></td>
+                  <td class="whitespace-nowrap px-3 py-2 text-slate-700">{{ s.at ? t12(s.at) : '—' }}</td>
+                  <td class="px-3 py-2">@if (s.lat !== null && s.lng !== null) { <a class="rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100" [href]="mapUrl(s.lat, s.lng)" target="_blank" rel="noopener">Map</a> } @else { <span class="text-slate-400">—</span> }</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="5" class="px-3 py-8 text-center text-slate-500">{{ loading() ? 'Loading…' : 'No check-ins in this period.' }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    } @else {
+      <section class="overflow-hidden rounded-xl border border-white/70 bg-white/70 backdrop-blur-xl">
+        <div class="max-h-[60vh] overflow-auto">
+          <table class="w-full min-w-[460px] text-left text-xs">
+            <thead class="sticky top-0 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500"><tr><th class="px-3 py-2">Signed in at</th><th class="px-3 py-2">Location</th><th class="px-3 py-2">Accuracy</th></tr></thead>
+            <tbody class="divide-y divide-slate-100">
+              @for (l of logins(); track l.at) {
+                <tr class="hover:bg-blue-50/50">
+                  <td class="whitespace-nowrap px-3 py-2 text-slate-700">{{ dt12(l.at) }}</td>
+                  <td class="px-3 py-2"><a class="rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100" [href]="mapUrl(l.lat, l.lng)" target="_blank" rel="noopener">Map</a></td>
+                  <td class="px-3 py-2 text-slate-600">{{ l.accuracy !== null ? '±' + (l.accuracy | number: '1.0-0') + ' m' : '—' }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="3" class="px-3 py-8 text-center text-slate-500">{{ loading() ? 'Loading…' : 'No captured logins.' }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  </div>
+
+  @if (kind(); as k) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-3" (click)="!busy() && kind.set(null)">
+      <div class="w-full max-w-sm rounded-xl bg-white p-4 shadow-xl" (click)="$event.stopPropagation()">
+        <h3 class="text-sm font-semibold text-slate-900">Download {{ k === 'excel' ? 'Excel' : 'PDF' }}</h3>
+        <p class="mb-3 text-[11px] text-slate-500">{{ emp()?.name }} · {{ filtered().length }} rows · choose a colour template</p>
+        <div class="grid grid-cols-6 gap-2">
+          @for (t of themes; track t.id) {
+            <button type="button" class="flex flex-col items-center gap-1 text-[10px] font-semibold text-slate-600" [disabled]="!!busy()" (click)="themeId.set(t.id)">
+              <span class="h-7 w-7 rounded-full shadow ring-offset-2 transition" [style.background]="t.hex" [class]="themeId() === t.id ? 'ring-2 ring-slate-700' : ''"></span>{{ t.label }}
+            </button>
+          }
+        </div>
+        <label class="mt-3 flex items-center gap-2 text-xs text-slate-700">
+          <input type="checkbox" [checked]="withReq()" (change)="withReq.set(!withReq())" /> Include attendance requests ({{ reqShown().length }})
+        </label>
+        <div class="mt-3 overflow-hidden rounded-lg border border-slate-200 text-[11px]">
+          <div class="px-3 py-1.5 font-bold" [style.background]="pickedHex()" [style.color]="textOn(pickedHex())">Date · Attendance · Status</div>
+          <div class="bg-slate-50 px-3 py-1 text-slate-800">Sample row</div>
+          <div class="bg-white px-3 py-1 text-slate-800">Sample row</div>
+        </div>
+        <div class="mt-4 flex gap-2">
+          <button type="button" class="rounded-lg bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200" [disabled]="!!busy()" (click)="kind.set(null)">Cancel</button>
+          <button type="button" class="flex-1 rounded-lg bg-blue-600 py-2 text-xs font-semibold text-white shadow shadow-blue-600/30 hover:bg-blue-500 disabled:opacity-70" [disabled]="!!busy()" (click)="confirm()">{{ busy() ? 'Preparing…' : 'Download' }}</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

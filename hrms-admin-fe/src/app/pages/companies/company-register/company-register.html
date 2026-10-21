@@ -1,0 +1,331 @@
+<div class="relative min-h-full overflow-clip bg-gradient-to-br from-sky-50 via-white to-blue-100 p-4 sm:p-6 lg:p-8">
+  <div class="pointer-events-none absolute -left-24 -top-24 h-96 w-96 rounded-full bg-blue-400/25 blur-[100px]"></div>
+  <div class="pointer-events-none absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-sky-300/30 blur-[100px]"></div>
+
+  <div class="relative mx-auto max-w-6xl">
+    <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Register company</h1>
+    <p class="mt-1 text-sm text-slate-500">Create the company and its login in one step.</p>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate class="mt-6 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+
+      <!-- ============ LEFT ============ -->
+      <div class="space-y-6">
+
+        <!-- Company details -->
+        <section class="rounded-2xl border border-white/70 bg-white/60 p-5 shadow-[0_20px_50px_-20px_rgba(37,99,235,0.35)] backdrop-blur-xl sm:p-6">
+          <h2 class="text-base font-semibold text-slate-800">Company details</h2>
+
+          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            @for (f of fields; track f.name) {
+              <div>
+                <label [for]="f.name" class="mb-1.5 block text-[13px] font-medium text-slate-600">{{ f.label }}</label>
+                <input
+                  [id]="f.name"
+                  [type]="f.type"
+                  [formControlName]="f.name"
+                  [placeholder]="f.placeholder"
+                  (input)="clearErr(f.name)"
+                  (blur)="checkDup(f.name)"
+                  class="w-full rounded-xl border bg-white/80 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:ring-4"
+                  [class]="bad(f.name)
+                    ? 'border-red-400 focus:border-red-400 focus:ring-red-400/15'
+                    : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/15'" />
+                @if (err(f.name); as e) {
+                  <p class="mt-1.5 text-xs text-red-500">{{ e }}</p>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Logo -->
+          <div class="mt-4">
+            <span class="mb-1.5 block text-[13px] font-medium text-slate-600">Company logo</span>
+            <label class="flex cursor-pointer items-center gap-4 rounded-xl border border-dashed border-blue-300 bg-white/50 p-3 transition hover:bg-blue-50/60">
+              <div class="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-blue-50 ring-1 ring-blue-100">
+                @if (logoPreview()) {
+                  <img [src]="logoPreview()" alt="" class="h-full w-full object-contain" />
+                } @else {
+                  <svg viewBox="0 0 24 24" class="h-6 w-6 text-blue-400" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 16V4m0 0 4 4m-4-4L8 8" />
+                    <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" />
+                  </svg>
+                }
+              </div>
+              <div class="text-sm">
+                <p class="font-medium text-slate-700">Click to upload</p>
+                <p class="text-xs text-slate-500">PNG, JPG or WebP · max 2 MB</p>
+              </div>
+              <input type="file" accept="image/png,image/jpeg,image/webp" class="sr-only" (change)="onLogo($event)" />
+            </label>
+            @if (logoError() || serverErrors()['logo']) {
+              <p class="mt-1.5 text-xs text-red-500">{{ logoError() || serverErrors()['logo'] }}</p>
+            }
+
+            @if (logoPreview()) {
+              <div class="mt-3 flex items-center justify-center rounded-xl p-4 ring-1 ring-slate-200" [style.background]="theme().sidebar">
+                <app-brand-logo
+                  [src]="logoPreview()"
+                  [logo]="theme().logo"
+                  [size]="56"
+                  [initial]="initial()"
+                  [accent]="theme().accent"
+                  [accentText]="textOn(theme().accent)" />
+              </div>
+              <app-logo-controls class="mt-3 block" [value]="theme().logo" (valueChange)="setLogo($event)" />
+            }
+          </div>
+        </section>
+
+        <!-- Location -->
+        <section class="rounded-2xl border border-white/70 bg-white/60 p-5 shadow-[0_20px_50px_-20px_rgba(37,99,235,0.35)] backdrop-blur-xl sm:p-6">
+          <h2 class="text-base font-semibold text-slate-800">Address &amp; location</h2>
+
+          <textarea
+            formControlName="address"
+            rows="2"
+            placeholder="Street, city, state, pincode"
+            class="mt-4 w-full resize-none rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"></textarea>
+
+          <div class="mt-4 flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-slate-700">Pin exact location</p>
+              <p class="text-xs text-slate-500">Use live location or paste a Google Maps link</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              [attr.aria-checked]="locationOn()"
+              (click)="toggleLocation()"
+              class="relative h-6 w-11 shrink-0 rounded-full transition"
+              [class]="locationOn() ? 'bg-blue-600' : 'bg-slate-300'">
+              <span class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition"
+                    [class]="locationOn() ? 'translate-x-5' : ''"></span>
+            </button>
+          </div>
+
+          @if (locationOn()) {
+            <div class="mt-4 space-y-3 rounded-xl bg-blue-50/60 p-3.5 ring-1 ring-blue-100">
+              <button
+                type="button"
+                (click)="useCurrentLocation()"
+                [disabled]="locating()"
+                class="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:opacity-70 sm:w-auto">
+                @if (locating()) {
+                  <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25" />
+                    <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+                  </svg>
+                  Locating
+                } @else {
+                  Use my current location
+                }
+              </button>
+
+              <input
+                #link
+                type="text"
+                placeholder="…or paste a Google Maps link"
+                (input)="onLink(link.value)"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15" />
+
+              @if (locationError()) {
+                <p class="text-xs text-red-500">{{ locationError() }}</p>
+              }
+
+              @if (lat() !== null && lng() !== null) {
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
+                  <span>Lat <b class="text-slate-800">{{ lat() }}</b></span>
+                  <span>Lng <b class="text-slate-800">{{ lng() }}</b></span>
+                  <a [href]="'https://www.google.com/maps?q=' + lat() + ',' + lng()" target="_blank" rel="noopener" class="font-medium text-blue-600 hover:text-blue-500">Open in Maps</a>
+                </div>
+              }
+            </div>
+          }
+        </section>
+
+        <!-- About -->
+        <section class="rounded-2xl border border-white/70 bg-white/60 p-5 shadow-[0_20px_50px_-20px_rgba(37,99,235,0.35)] backdrop-blur-xl sm:p-6">
+          <h2 class="text-base font-semibold text-slate-800">About</h2>
+          <textarea
+            formControlName="about"
+            rows="3"
+            placeholder="Short description of the company"
+            class="mt-4 w-full resize-none rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15"></textarea>
+        </section>
+
+        <!-- Login -->
+        <section class="rounded-2xl border border-white/70 bg-white/60 p-5 shadow-[0_20px_50px_-20px_rgba(37,99,235,0.35)] backdrop-blur-xl sm:p-6">
+          <h2 class="text-base font-semibold text-slate-800">Login password</h2>
+          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="password" class="mb-1.5 block text-[13px] font-medium text-slate-600">Password</label>
+              <input
+                id="password"
+                type="password"
+                formControlName="password"
+                autocomplete="new-password"
+                placeholder="Min 6 characters"
+                class="w-full rounded-xl border bg-white/80 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:ring-4"
+                [class]="bad('password')
+                  ? 'border-red-400 focus:border-red-400 focus:ring-red-400/15'
+                  : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/15'" />
+              @if (err('password'); as e) {
+                <p class="mt-1.5 text-xs text-red-500">{{ e }}</p>
+              }
+            </div>
+            <div>
+              <label for="confirmPassword" class="mb-1.5 block text-[13px] font-medium text-slate-600">Confirm password</label>
+              <input
+                id="confirmPassword"
+                type="password"
+                formControlName="confirmPassword"
+                autocomplete="new-password"
+                placeholder="Repeat password"
+                class="w-full rounded-xl border bg-white/80 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:ring-4"
+                [class]="bad('confirmPassword')
+                  ? 'border-red-400 focus:border-red-400 focus:ring-red-400/15'
+                  : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/15'" />
+              @if (err('confirmPassword'); as e) {
+                <p class="mt-1.5 text-xs text-red-500">{{ e }}</p>
+              }
+            </div>
+          </div>
+        </section>
+
+        @if (formError()) {
+          <div class="rounded-xl border border-red-300/60 bg-red-50 px-4 py-3 text-sm text-red-600">{{ formError() }}</div>
+        }
+
+        <button
+          type="submit"
+          [disabled]="loading()"
+          class="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-blue-500 to-blue-700 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 ring-1 ring-white/20 transition hover:from-blue-400 hover:to-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto sm:min-w-48">
+          @if (loading()) {
+            <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25" />
+              <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+            </svg>
+            Registering
+          } @else {
+            Register company
+          }
+        </button>
+      </div>
+
+      <!-- ============ RIGHT: THEME + LIVE PREVIEW ============ -->
+      <aside class="lg:sticky lg:top-6 lg:max-h-[calc(100dvh-8rem)] lg:self-start lg:overflow-y-auto lg:rounded-2xl">
+        <div class="rounded-2xl border border-white/70 bg-white/60 p-5 shadow-[0_20px_50px_-20px_rgba(37,99,235,0.35)] backdrop-blur-xl sm:p-6">
+          <h2 class="text-base font-semibold text-slate-800">Dashboard theme</h2>
+          <p class="mt-0.5 text-xs text-slate-500">Live preview of the company dashboard</p>
+
+          <!-- Preview -->
+          <div class="mt-4 overflow-hidden rounded-2xl border border-white/70 p-3 shadow-inner" [style]="frame(theme())">
+            <div class="flex h-64 gap-2.5">
+              <!-- sidebar -->
+              <div class="flex w-[30%] flex-col gap-2 rounded-xl p-2.5"
+                   [style]="panel(theme(), theme().sidebar)"
+                   [style.color]="textOn(theme().sidebar)">
+                <div class="flex items-center gap-1.5">
+                  @if (theme().logo.place !== 'navbar') {
+                    <app-brand-logo
+                      [src]="logoPreview()"
+                      [logo]="theme().logo"
+                      [size]="28"
+                      [initial]="initial()"
+                      [accent]="theme().accent"
+                      [accentText]="textOn(theme().accent)" />
+                  }
+                  @if (theme().logo.showName || theme().logo.place === 'navbar') {
+                    <span class="truncate text-[11px] font-semibold">{{ form.controls.companyName.value || 'Your company' }}</span>
+                  }
+                </div>
+                <div class="mt-1 space-y-1.5">
+                  <div class="h-2 w-full rounded-full" [style.background]="theme().accent"></div>
+                  <div class="h-2 w-4/5 rounded-full bg-current opacity-30"></div>
+                  <div class="h-2 w-3/5 rounded-full bg-current opacity-30"></div>
+                  <div class="h-2 w-4/5 rounded-full bg-current opacity-30"></div>
+                </div>
+              </div>
+
+              <!-- main -->
+              <div class="flex min-w-0 flex-1 flex-col gap-2.5">
+                <div class="flex items-center justify-between rounded-xl px-3 py-2"
+                     [style]="panel(theme(), theme().navbar)"
+                     [style.color]="textOn(theme().navbar)">
+                  @if (theme().logo.place !== 'sidebar') {
+                    <app-brand-logo
+                      [src]="logoPreview()"
+                      [logo]="theme().logo"
+                      [size]="18"
+                      [initial]="initial()"
+                      [accent]="theme().accent"
+                      [accentText]="textOn(theme().accent)" />
+                  } @else {
+                    <div class="h-2 w-16 rounded-full bg-current opacity-40"></div>
+                  }
+                  <div class="h-5 w-5 rounded-full" [style.background]="theme().accent"></div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2.5">
+                  @for (i of [1, 2, 3]; track i) {
+                    <div class="h-14 rounded-xl p-2"
+                         [style]="panel(theme(), theme().content)"
+                         [style.color]="textOn(theme().content)">
+                      <div class="h-1.5 w-1/2 rounded-full bg-current opacity-40"></div>
+                      <div class="mt-2 h-3 w-3/4 rounded-full" [style.background]="theme().accent"></div>
+                    </div>
+                  }
+                </div>
+
+                <div class="flex flex-1 items-end gap-1.5 rounded-xl p-3"
+                     [style]="panel(theme(), theme().content)">
+                  @for (h of [40, 65, 30, 80, 55, 90, 45]; track $index) {
+                    <div class="flex-1 rounded-t" [style.height.%]="h" [style.background]="theme().accent" [style.opacity]="0.45 + h / 200"></div>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Presets -->
+          <p class="mb-2 mt-5 text-[13px] font-medium text-slate-600">Presets</p>
+          <div class="flex flex-wrap gap-2">
+            @for (p of presets; track p.name) {
+              <button type="button" (click)="applyPreset(p.theme)"
+                      class="flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-blue-400 hover:text-blue-600">
+                <span class="h-3 w-3 rounded-full ring-1 ring-black/10" [style.background]="p.theme.accent"></span>
+                {{ p.name }}
+              </button>
+            }
+          </div>
+
+          <!-- Style -->
+          <p class="mb-2 mt-5 text-[13px] font-medium text-slate-600">Style</p>
+          <div class="grid grid-cols-2 gap-2">
+            @for (s of styles; track s.key) {
+              <button type="button" (click)="setStyle(s.key)"
+                      class="rounded-lg border px-3 py-2 text-xs font-medium transition"
+                      [class]="theme().style === s.key
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-slate-200 bg-white/70 text-slate-600 hover:border-blue-300'">
+                {{ s.label }}
+              </button>
+            }
+          </div>
+
+          <!-- Colors -->
+          <p class="mb-2 mt-5 text-[13px] font-medium text-slate-600">Colors</p>
+          <div class="grid grid-cols-2 gap-2">
+            @for (c of colorKeys; track c.key) {
+              <label class="flex cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-xs font-medium text-slate-600">
+                {{ c.label }}
+                <input #col type="color" [value]="theme()[c.key]" (input)="setColor(c.key, col.value)"
+                       class="h-6 w-8 cursor-pointer rounded border-0 bg-transparent p-0" />
+              </label>
+            }
+          </div>
+        </div>
+      </aside>
+    </form>
+  </div>
+</div>

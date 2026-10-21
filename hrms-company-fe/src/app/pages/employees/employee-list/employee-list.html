@@ -1,0 +1,193 @@
+<div class="mx-auto max-w-6xl p-3 sm:p-4"
+     [style.--accent]="brand.theme().accent"
+     [style.--accent-text]="brand.accentText()"
+     [style.--card]="brand.theme().navbar">
+
+  <div class="flex items-end justify-between gap-2">
+    <div>
+      <h1 class="text-lg font-semibold tracking-tight" [style.color]="brand.contentText()">Employees</h1>
+      <p class="text-xs opacity-70" [style.color]="brand.contentText()">{{ total() }} total</p>
+    </div>
+    <a *can="'employees.register'" routerLink="/employee/register" class="btn">Register</a>
+  </div>
+
+  @if (error()) {
+    <div class="mt-2 rounded-lg px-3 py-2 text-xs" style="background:#fef2f2;color:#dc2626;border:1px solid #fca5a5">{{ error() }}</div>
+  }
+
+  <section class="mt-3 rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+
+    <!-- Filters -->
+    <div class="flex flex-col gap-2 sm:flex-row">
+      <select class="inp w-full sm:w-40" (change)="onStatus($event)">
+        <option value="">All status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+      <input class="inp w-full sm:ml-auto sm:w-72" type="text" placeholder="Search name, email, phone, ID, role…" [value]="search()" (input)="onSearch($event)" />
+    </div>
+
+    <!-- Table -->
+    <div class="line mt-2.5 max-h-[calc(100vh-15rem)] overflow-auto rounded-lg border">
+      <table class="tbl w-full min-w-[780px] text-left text-xs">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>ID</th>
+            <th>Role</th>
+            <th>Work</th>
+            <th>Phone</th>
+            <th>Status</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading()) {
+            @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+              <tr><td colspan="7"><div class="h-7 animate-pulse rounded-md bg-slate-400/20"></div></td></tr>
+            }
+          } @else if (rows().length === 0) {
+            <tr><td colspan="7" class="py-8 text-center opacity-70">No employees found.</td></tr>
+          } @else {
+            @for (r of rows(); track r.id) {
+              <tr>
+                <td>
+                  <div class="flex items-center gap-2">
+                    @if (r.profilePicture) {
+                      <img [src]="url(r.profilePicture)" alt="" class="h-7 w-7 shrink-0 rounded-full object-cover" />
+                    } @else {
+                      <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+                            [style.background]="brand.theme().accent" [style.color]="brand.accentText()">{{ r.name.charAt(0).toUpperCase() }}</span>
+                    }
+                    <div class="min-w-0">
+                      <p class="truncate font-semibold">{{ r.name }}</p>
+                      <p class="truncate text-[11px] opacity-70">{{ r.email }}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="whitespace-nowrap font-mono text-[11px]">{{ r.employeeCode }}</td>
+                <td class="max-w-[9rem] truncate">{{ r.role ?? '—' }}</td>
+                <td class="whitespace-nowrap">{{ r.workType ? workLabel[r.workType] : '—' }}</td>
+                <td class="whitespace-nowrap">{{ r.phone ?? '—' }}</td>
+                <td>
+                  @if (perm.can('employees.edit')) {
+                    <button type="button" role="switch" class="switch" [class.on]="r.isActive"
+                            [attr.aria-checked]="r.isActive" [disabled]="busyId() === r.id" (click)="toggle(r)"
+                            [style.background]="r.isActive ? brand.theme().accent : '#94a3b8'">
+                      <span></span>
+                    </button>
+                  } @else {
+                    <span class="text-[11px] font-medium" [style.color]="r.isActive ? '#10b981' : '#94a3b8'">
+                      {{ r.isActive ? 'Active' : 'Inactive' }}
+                    </span>
+                  }
+                </td>
+                <td class="whitespace-nowrap text-right">
+                  <button type="button" class="act" (click)="view(r)">View</button>
+                  <a *can="'employees.edit'" [routerLink]="['/employee/edit', r.id]" class="act ml-1">Edit</a>
+                  @if (perm.isOwner()) {
+                    <button type="button" class="act danger ml-1" (click)="remove(r)" [disabled]="busyId() === r.id">Del</button>
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (pages() > 1) {
+      <div class="mt-2.5 flex items-center justify-between text-xs">
+        <span>Page {{ page() }} / {{ pages() }}</span>
+        <div class="flex gap-1.5">
+          <button type="button" class="act" (click)="go(page() - 1)" [disabled]="page() === 1">Prev</button>
+          <button type="button" class="act" (click)="go(page() + 1)" [disabled]="page() === pages()">Next</button>
+        </div>
+      </div>
+    }
+  </section>
+
+  <!-- View modal -->
+  @if (detail() || detailLoading()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-3 backdrop-blur-sm" (click)="closeView()">
+      <div class="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl p-5 shadow-2xl"
+           [style.background]="brand.theme().navbar" [style.color]="brand.navbarText()"
+           (click)="$event.stopPropagation()">
+        @if (detailLoading()) {
+          <div class="h-80 animate-pulse rounded-xl bg-slate-400/20"></div>
+        } @else if (detail(); as d) {
+          <div class="flex flex-col gap-5 md:flex-row">
+
+            <!-- Left: photo -->
+            <div class="flex shrink-0 flex-col items-center gap-3 md:w-72">
+              @if (d.profilePicture) {
+                <a [href]="url(d.profilePicture)" target="_blank" rel="noopener" title="Open full size">
+                  <img [src]="url(d.profilePicture)" alt="" class="h-64 w-64 rounded-2xl object-cover shadow-lg md:h-72 md:w-72"
+                       [style.border]="'4px solid ' + brand.theme().accent" />
+                </a>
+              } @else {
+                <span class="flex h-64 w-64 items-center justify-center rounded-2xl text-7xl font-bold md:h-72 md:w-72"
+                      [style.background]="brand.theme().accent" [style.color]="brand.accentText()">{{ d.name.charAt(0).toUpperCase() }}</span>
+              }
+              <div class="text-center">
+                <p class="text-base font-semibold">{{ d.name }}</p>
+                <p class="text-xs font-medium" [style.color]="d.isActive ? '#10b981' : '#94a3b8'">{{ d.isActive ? 'Active' : 'Inactive' }}</p>
+                <p class="mt-0.5 font-mono text-[11px] opacity-70">{{ d.employeeCode }}</p>
+              </div>
+            </div>
+
+            <!-- Right: details -->
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold">Employee details</h3>
+                <button type="button" class="act" (click)="closeView()">Close</button>
+              </div>
+
+              <dl class="mt-3 grid grid-cols-1 gap-x-5 gap-y-1.5 text-xs sm:grid-cols-2">
+                @for (kv of fields(d); track kv[0]) {
+                  <div class="line flex gap-2 border-b pb-1">
+                    <dt class="w-28 shrink-0 opacity-60">{{ kv[0] }}</dt>
+                    <dd class="min-w-0 break-words font-medium">{{ kv[1] }}</dd>
+                  </div>
+                }
+              </dl>
+
+              @if (d.documents.length) {
+                <h4 class="mt-5 text-xs font-bold">Certificates &amp; achievements</h4>
+                @for (x of d.documents; track x.id) {
+                  <div class="line mt-1.5 flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs">
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                          [style.background]="brand.theme().accent" [style.color]="brand.accentText()">{{ x.type }}</span>
+                    <span class="min-w-0 flex-1 truncate font-medium">{{ x.title }}</span>
+                    @if (x.filePath) {
+                      <a [href]="url(x.filePath)" target="_blank" rel="noopener" class="font-semibold underline">Open</a>
+                    }
+                  </div>
+                }
+              }
+
+              @if (d.histories.length) {
+                <h4 class="mt-5 text-xs font-bold">Employment history</h4>
+                @for (x of d.histories; track x.id) {
+                  <div class="line mt-1.5 flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs">
+                    <div class="min-w-0 flex-1">
+                      <p class="truncate font-medium">{{ x.employer }}</p>
+                      <p class="truncate text-[11px] opacity-70">
+                        {{ x.startDate ?? '—' }} → {{ x.endDate ?? '—' }}
+                        @if (x.reasonForLeaving) { · {{ x.reasonForLeaving }} }
+                      </p>
+                    </div>
+                    @if (x.relievingLetter) {
+                      <a [href]="url(x.relievingLetter)" target="_blank" rel="noopener" class="font-semibold underline">Letter</a>
+                    }
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

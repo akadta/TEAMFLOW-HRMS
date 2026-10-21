@@ -1,0 +1,173 @@
+<div class="min-h-full bg-gradient-to-br from-sky-50 via-white to-blue-100 p-3 sm:p-4">
+  <div class="mx-auto max-w-6xl space-y-3">
+
+    <button type="button" class="text-xs font-semibold text-blue-700 hover:underline" (click)="back()">‹ Back to companies</button>
+
+    <div>
+      <h1 class="text-lg font-semibold tracking-tight text-slate-900">{{ company()?.name ?? 'Company' }}</h1>
+      <p class="text-xs text-slate-500">
+        Owner: {{ company()?.ownerName }} · {{ shown().length }} of {{ items().length }} employee(s)
+        · click one to {{ clickable ? 'open the report' : 'see full details' }}
+      </p>
+    </div>
+
+    <!-- filters -->
+    <div class="flex flex-wrap items-center gap-2">
+      <input [class]="inp + ' w-52'" placeholder="Search name / ID / email / phone" [value]="search()" (input)="search.set(val($event))" />
+
+      <div class="flex rounded-lg bg-white/70 p-0.5 shadow-sm ring-1 ring-slate-200">
+        @for (t of tabs; track t.id) {
+          <button type="button" class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
+                  [class]="status() === t.id ? 'bg-blue-600 text-white shadow' : 'text-slate-600 hover:bg-white'"
+                  (click)="status.set(t.id)">{{ t.label }}</button>
+        }
+      </div>
+
+      <select [class]="inp" (change)="role.set(val($event))">
+        <option value="">All roles</option>
+        @for (r of roles(); track r) { <option [value]="r" [selected]="r === role()">{{ r }}</option> }
+      </select>
+
+      <select [class]="inp" (change)="work.set(val($event))">
+        <option value="" [selected]="work() === ''">Any work type</option>
+        <option value="office" [selected]="work() === 'office'">Office</option>
+        <option value="remote" [selected]="work() === 'remote'">Remote</option>
+        <option value="hybrid" [selected]="work() === 'hybrid'">Hybrid</option>
+        <option value="none" [selected]="work() === 'none'">Not set</option>
+      </select>
+
+      <input [class]="inp" type="date" title="Joined from" [value]="joinFrom()" (change)="joinFrom.set(val($event))" />
+      <input [class]="inp" type="date" title="Joined to" [value]="joinTo()" (change)="joinTo.set(val($event))" />
+
+      <select [class]="inp" (change)="sort.set(val($event))">
+        @for (s of sorts; track s.id) { <option [value]="s.id" [selected]="s.id === sort()">{{ s.label }}</option> }
+      </select>
+
+      <button type="button" class="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200" (click)="reset()">Reset</button>
+    </div>
+
+    @if (error()) {
+      <div class="rounded-lg border border-red-300/60 bg-red-50 px-3 py-2 text-xs text-red-600">{{ error() }}</div>
+    }
+
+    <section class="overflow-hidden rounded-xl border border-white/70 bg-white/70 shadow-[0_12px_30px_-15px_rgba(37,99,235,0.35)] backdrop-blur-xl">
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[760px] text-left text-xs">
+          <thead class="bg-slate-50/80 text-[11px] uppercase tracking-wide text-slate-500">
+            <tr>
+              <th class="px-3 py-2">Employee</th>
+              <th class="px-3 py-2">Role</th>
+              <th class="px-3 py-2">Email</th>
+              <th class="px-3 py-2">Phone</th>
+              <th class="px-3 py-2">Work type</th>
+              <th class="px-3 py-2">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (e of shown(); track e.id) {
+              <tr class="transition hover:bg-blue-50/60" class="cursor-pointer" (click)="open(e)">
+                <td class="px-3 py-2">
+                  <div class="flex items-center gap-2">
+                    @if (e.profilePicture) {
+                      <img [src]="fileUrl(e.profilePicture)" alt="" class="h-8 w-8 rounded-full object-cover" />
+                    } @else {
+                      <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-700">{{ e.name.charAt(0).toUpperCase() }}</div>
+                    }
+                    <div>
+                      <p class="font-semibold text-slate-800">{{ e.name }}</p>
+                      <p class="text-[11px] text-slate-500">{{ e.employeeCode }}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-3 py-2 text-slate-600">{{ e.role ?? '—' }}</td>
+                <td class="px-3 py-2 text-slate-600">{{ e.email }}</td>
+                <td class="px-3 py-2 text-slate-600">{{ e.phone ?? '—' }}</td>
+                <td class="px-3 py-2 capitalize text-slate-600">{{ e.workType ?? '—' }}</td>
+                <td class="px-3 py-2">
+                  <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                        [class]="e.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'">{{ e.isActive ? 'Active' : 'Inactive' }}</span>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="px-3 py-8 text-center text-slate-500">{{ loading() ? 'Loading…' : 'No employees match.' }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+    <!-- Employee details modal -->
+  @if (detailOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-3" (click)="detailOpen.set(false)">
+      <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-4 shadow-xl" (click)="$event.stopPropagation()">
+
+        @if (detail(); as d) {
+          <div class="flex items-center gap-3">
+            @if (d.employee.profilePicture) {
+              <img [src]="fileUrl(d.employee.profilePicture)" alt="" class="h-14 w-14 rounded-full object-cover" />
+            } @else {
+              <div class="flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-700">{{ d.employee.name.charAt(0).toUpperCase() }}</div>
+            }
+            <div class="mr-auto min-w-0">
+              <p class="truncate text-sm font-semibold text-slate-900">{{ d.employee.name }}</p>
+              <p class="truncate text-[11px] text-slate-500">{{ d.employee.company }} · {{ d.employee.role ?? 'No role' }}</p>
+            </div>
+            <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                  [class]="d.employee.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'">{{ d.employee.isActive ? 'Active' : 'Inactive' }}</span>
+          </div>
+
+          @for (s of sections(); track s.title) {
+            <h4 class="mb-1.5 mt-4 text-[11px] font-semibold uppercase tracking-wide text-blue-700">{{ s.title }}</h4>
+            <div class="grid gap-x-4 gap-y-2 sm:grid-cols-2">
+              @for (it of s.items; track it[0]) {
+                <div>
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{{ it[0] }}</p>
+                  <p class="break-words text-xs text-slate-800">{{ it[1] ?? '—' }}</p>
+                </div>
+              }
+            </div>
+          }
+
+          <h4 class="mb-1.5 mt-4 text-[11px] font-semibold uppercase tracking-wide text-blue-700">Documents ({{ d.employee.documents.length }})</h4>
+          @for (x of d.employee.documents; track $index) {
+            <div class="mb-1.5 flex items-center gap-2 rounded-lg bg-slate-50 px-2.5 py-1.5">
+              <span class="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">{{ x.type }}</span>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-xs font-semibold text-slate-800">{{ x.title }}</p>
+                @if (x.description) { <p class="truncate text-[11px] text-slate-500">{{ x.description }}</p> }
+              </div>
+              @if (x.filePath) {
+                <a class="text-[11px] font-semibold text-blue-700 hover:underline" [href]="fileUrl(x.filePath)" target="_blank" rel="noopener">Open</a>
+              }
+            </div>
+          } @empty {
+            <p class="text-xs text-slate-500">No documents.</p>
+          }
+
+          <h4 class="mb-1.5 mt-4 text-[11px] font-semibold uppercase tracking-wide text-blue-700">Employment history ({{ d.employee.histories.length }})</h4>
+          @for (h of d.employee.histories; track $index) {
+            <div class="mb-1.5 flex items-center gap-2 rounded-lg bg-slate-50 px-2.5 py-1.5">
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-xs font-semibold text-slate-800">{{ h.employer }}</p>
+                <p class="truncate text-[11px] text-slate-500">
+                  {{ fmt(h.startDate) ?? '—' }} → {{ fmt(h.endDate) ?? '—' }}{{ h.reasonForLeaving ? ' · ' + h.reasonForLeaving : '' }}
+                </p>
+              </div>
+              @if (h.relievingLetter) {
+                <a class="text-[11px] font-semibold text-blue-700 hover:underline" [href]="fileUrl(h.relievingLetter)" target="_blank" rel="noopener">Letter</a>
+              }
+            </div>
+          } @empty {
+            <p class="text-xs text-slate-500">No employment history.</p>
+          }
+        } @else if (detailError()) {
+          <p class="text-xs text-red-600">{{ detailError() }}</p>
+        } @else {
+          <p class="py-8 text-center text-xs text-slate-500">Loading…</p>
+        }
+
+        <button type="button" class="mt-4 w-full rounded-lg bg-slate-100 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200" (click)="detailOpen.set(false)">Close</button>
+      </div>
+    </div>
+  }
+</div>

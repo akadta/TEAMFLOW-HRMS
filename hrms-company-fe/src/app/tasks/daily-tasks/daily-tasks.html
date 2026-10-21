@@ -1,0 +1,99 @@
+<div class="mx-auto max-w-6xl p-3 sm:p-4"
+     [style.--accent]="brand.theme().accent"
+     [style.--accent-text]="brand.accentText()"
+     [style.--card]="brand.theme().navbar">
+
+  <div class="flex flex-wrap items-end gap-2">
+    <div class="mr-auto">
+      <h1 class="text-lg font-semibold tracking-tight" [style.color]="brand.contentText()">Daily tasks</h1>
+      <p class="text-xs opacity-70" [style.color]="brand.contentText()">Your managers can see these · {{ shown().length }} of {{ items().length }}</p>
+    </div>
+    <button type="button" class="btn" (click)="add()">+ Add task</button>
+  </div>
+
+  @if (policy(); as p) {
+    <div class="mt-3 rounded-xl px-3 py-2 text-xs" [class]="p.required ? 'bg-violet-100 text-violet-800' : 'bg-slate-200 text-slate-700'">
+      @if (p.required) {
+        <b>Approval is ON.</b> When you complete a task it goes to {{ p.mode === 'all' ? 'all of' : 'any one of' }}:
+        @for (a of p.approvers; track $index) {
+          <span class="ml-1 rounded-full bg-white/70 px-2 py-0.5 font-semibold">{{ group[a.group] ?? a.group }}: {{ a.name }}</span>
+        }
+      } @else {
+        <b>Approval is OFF</b> for you, so a completed task finishes at once. The owner can switch it on in Task settings.
+      }
+    </div>
+  }
+
+  <section class="mt-3 rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+    <div class="flex flex-wrap gap-1.5">
+      @for (c of chips; track c) {
+        <button type="button" class="chip" [class.on]="status() === c" (click)="status.set(c)">{{ c === 'all' ? 'All' : TS[c].label }} <span class="ml-1 opacity-70">{{ counts()[c] || 0 }}</span></button>
+      }
+    </div>
+
+    <div class="mt-2.5 flex flex-wrap items-center gap-2">
+      <input class="inp w-48" placeholder="Search tasks" [value]="q()" (input)="q.set(val($event))" />
+      <select class="inp" (change)="appr.set(val($event))">
+        <option value="all">Any approval</option>
+        <option value="pending">Waiting approval</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+      </select>
+      <input class="inp" type="date" title="Starts from" [value]="from()" (change)="from.set(val($event))" />
+      <input class="inp" type="date" title="Starts to" [value]="to()" (change)="to.set(val($event))" />
+      <label class="flex items-center gap-1.5 text-xs"><input type="checkbox" [checked]="late()" (change)="late.set(!late())" /> Overdue only</label>
+    </div>
+
+    <div class="line mt-2.5 max-h-[calc(100vh-20rem)] overflow-auto rounded-lg border">
+      <table class="tbl w-full min-w-[900px] text-left text-xs">
+        <thead><tr><th>Task</th><th>Time range</th><th>Progress</th><th>Status</th><th>Approval</th><th class="text-right">Actions</th></tr></thead>
+        <tbody>
+          @for (t of shown(); track t.id) {
+            <tr class="clickable" (click)="edit(t)">
+              <td class="max-w-[16rem]"><p class="truncate font-semibold">{{ t.title }}</p>@if (t.files.length) { <p class="text-[11px] opacity-70">{{ t.files.length }} file(s)</p> }</td>
+              <td class="whitespace-nowrap text-[11px]">
+                {{ t.startAt ? dt12(t.startAt) : '—' }} → <span [style.color]="overdue(t) ? '#ef4444' : null">{{ t.dueAt ? dt12(t.dueAt) : '—' }}</span>
+              </td>
+              <td (click)="$event.stopPropagation()">
+                <div class="flex items-center gap-2">
+                  <input type="range" min="0" max="100" step="5" class="w-24" [disabled]="locked(t)" [value]="t.progress" (change)="setProgress(t, $event)" />
+                  <span class="w-9 text-[11px]">{{ t.progress }}%</span>
+                </div>
+              </td>
+              <td (click)="$event.stopPropagation()">
+                <select class="inp !py-1" [disabled]="locked(t)" (change)="setStatus(t, $event)">
+                  @for (s of statuses; track s) { <option [value]="s" [selected]="s === t.status">{{ TS[s].label }}</option> }
+                </select>
+              </td>
+              <td><span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="AP[t.approval].cls" [title]="t.approvalNote ?? ''">{{ AP[t.approval].label }}</span></td>
+              <td class="whitespace-nowrap text-right" (click)="$event.stopPropagation()">
+                @if (t.status !== 'done' && !locked(t)) { <button type="button" class="act" (click)="complete(t)">{{ policy()?.required ? 'Complete → approval' : 'Complete' }}</button> }
+                <button type="button" class="act ml-1" (click)="edit(t)">{{ locked(t) ? 'View' : 'Edit' }}</button>
+                @if (!locked(t)) { <button type="button" class="act ml-1" style="color:#ef4444" (click)="askDelete(t)">Delete</button> }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="py-8 text-center opacity-70">{{ loading() ? 'Loading…' : 'No daily tasks yet. Click + Add task.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  @if (dialog(); as d) {
+    <div class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 p-3 backdrop-blur-sm" (click)="dialog.set(null)">
+      <div class="w-full max-w-sm rounded-2xl p-4 shadow-2xl" [style.background]="brand.theme().navbar" [style.color]="brand.navbarText()" (click)="$event.stopPropagation()">
+        <h3 class="text-sm font-semibold">{{ d.title }}</h3>
+        <p class="mt-2 text-xs opacity-90">{{ d.text }}</p>
+        <div class="mt-4 flex gap-2">
+          @if (d.del) {
+            <button type="button" class="act px-4 py-2" (click)="dialog.set(null)">Cancel</button>
+            <button type="button" class="btn btn-block flex-1" style="background:#dc2626;color:#fff" (click)="confirmDelete()">Delete</button>
+          } @else {
+            <button type="button" class="btn btn-block flex-1" (click)="dialog.set(null)">OK</button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>

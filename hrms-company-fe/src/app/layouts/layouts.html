@@ -1,0 +1,26 @@
+<div class="flex h-full gap-3 p-3" [style]="brand.frame()">
+
+  @if (mobile() && !collapsed()) {
+    <div class="fixed inset-0 z-40 bg-black/50" (click)="collapsed.set(true)"></div>
+  }
+
+  @if (!mobile() || !collapsed()) {
+    <app-sidebar
+      [collapsed]="mobile() ? false : collapsed()"
+      (expand)="collapsed.set(false)"
+      [class.fixed]="mobile()"
+      [class.left-3]="mobile()"
+      [class.top-3]="mobile()"
+      [class.bottom-3]="mobile()"
+      [class.z-50]="mobile()" />
+  }
+
+  <div class="flex min-w-0 flex-1 flex-col gap-3">
+    <app-navbar (toggle)="toggleSidebar()" />
+
+    <main class="min-h-0 flex-1 overflow-y-auto px-2 py-2 sm:px-4" [style.color]="brand.contentText()">
+      <router-outlet />
+    </main>
+  </div>
+</div>
+<app-notify-modal />

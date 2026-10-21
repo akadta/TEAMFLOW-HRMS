@@ -1,0 +1,113 @@
+<div class="mx-auto max-w-6xl p-3 sm:p-4"
+     [style.--accent]="brand.theme().accent"
+     [style.--accent-text]="brand.accentText()"
+     [style.--card]="brand.theme().navbar">
+
+  <div class="flex flex-wrap items-end gap-2">
+    <div class="mr-auto">
+      <h1 class="text-lg font-semibold tracking-tight" [style.color]="brand.contentText()">My attendance</h1>
+      <p class="text-xs opacity-70" [style.color]="brand.contentText()">Your days, check-ins and login locations · IST</p>
+    </div>
+    @for (p of presets; track p.id) { <button type="button" class="act" [style.color]="brand.contentText()" (click)="preset(p.id)">{{ p.label }}</button> }
+    <input class="inp" type="date" [value]="from()" (change)="from.set(val($event)); load()" />
+    <input class="inp" type="date" [value]="to()" (change)="to.set(val($event)); load()" />
+  </div>
+
+  @if (error()) {
+    <div class="mt-2 rounded-lg px-3 py-2 text-xs" style="background:#fef2f2;color:#dc2626;border:1px solid #fca5a5">{{ error() }}</div>
+  }
+
+  <section class="mt-3 rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+    <div class="line flex w-fit rounded-lg border p-0.5">
+      <button type="button" class="tab" [class.on]="tab() === 'days'" (click)="tab.set('days')">Days ({{ rows().length }})</button>
+      <button type="button" class="tab" [class.on]="tab() === 'checkins'" (click)="tab.set('checkins')">Check-ins ({{ slots().length }})</button>
+      <button type="button" class="tab" [class.on]="tab() === 'logins'" (click)="tab.set('logins')">Logins ({{ logins().length }})</button>
+    </div>
+
+    @if (tab() === 'days') {
+      <div class="mt-2 flex flex-wrap gap-1.5">
+        @for (c of chips; track c) {
+          <button type="button" class="chip" [class.on]="status() === c" (click)="status.set(c)">{{ c === 'all' ? 'All' : STATUS[c].label }} <span class="ml-1 opacity-70">{{ counts()[c] || 0 }}</span></button>
+        }
+      </div>
+      <div class="mt-2 flex flex-wrap items-center gap-2">
+        <select class="inp" (change)="bandIdx.set(+val($event))">
+          <option value="-1">Any lateness</option>
+          @for (b of BANDS; track $index) { <option [value]="$index" [selected]="$index === bandIdx()">{{ b.label }}</option> }
+        </select>
+        <input class="inp w-44" placeholder="Search note" [value]="q()" (input)="q.set(val($event))" />
+        <button type="button" class="act" (click)="reset()">Reset</button>
+      </div>
+
+      <div class="line mt-2.5 max-h-[calc(100vh-21rem)] overflow-auto rounded-lg border">
+        <table class="tbl w-full min-w-[760px] text-left text-xs">
+          <thead><tr><th>Date</th><th>Attendance</th><th>Status</th><th>Check-in</th><th>Late</th><th>Source</th><th>Proof</th></tr></thead>
+          <tbody>
+            @for (r of shown(); track r.date) {
+              <tr>
+                <td class="whitespace-nowrap">{{ dayLabel(r.date) }}</td>
+                <td><span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="RES[result(r.status)]">{{ result(r.status) }}</span></td>
+                <td>
+                  <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="STATUS[r.status].cls">{{ STATUS[r.status].label }}</span>
+                  @if (r.note) { <span class="ml-1 text-[11px] opacity-70">{{ r.note }}</span> }
+                </td>
+                <td class="whitespace-nowrap">{{ r.checkInAt ? t12(r.checkInAt) : '—' }}</td>
+                <td>
+                  @if (r.checkInAt) { <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="band(r.lateMinutes).cls">{{ lateText(r.lateMinutes) }}</span> } @else { <span class="opacity-50">—</span> }
+                </td>
+                <td>{{ srcName(r.source) }}</td>
+                <td class="whitespace-nowrap">
+                  @if (r.photoPath) { <a class="act" [href]="fileUrl(r.photoPath)" target="_blank" rel="noopener">Photo</a> }
+                  @if (r.lat !== null && r.lng !== null) { <a class="act ml-1" [href]="mapUrl(r.lat, r.lng)" target="_blank" rel="noopener">Map</a> }
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="py-8 text-center opacity-70">{{ loading() ? 'Loading…' : 'No days.' }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (tab() === 'checkins') {
+      <div class="mt-2 flex flex-wrap gap-1.5">
+        @for (c of slotChips; track c) {
+          <button type="button" class="chip" [class.on]="slotStatus() === c" (click)="slotStatus.set(c)">{{ slotLabel[c] }} <span class="ml-1 opacity-70">{{ slotCounts()[c] || 0 }}</span></button>
+        }
+      </div>
+      <div class="line mt-2.5 max-h-[calc(100vh-19rem)] overflow-auto rounded-lg border">
+        <table class="tbl w-full min-w-[560px] text-left text-xs">
+          <thead><tr><th>Date</th><th>Window</th><th>Status</th><th>Checked in at</th><th>Location</th></tr></thead>
+          <tbody>
+            @for (s of slotShown(); track s.date + s.from) {
+              <tr>
+                <td class="whitespace-nowrap">{{ dayLabel(s.date) }}</td>
+                <td class="whitespace-nowrap">{{ hhmm(s.from) }} – {{ hhmm(s.to) }}</td>
+                <td><span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="slotCls[s.status]">{{ slotLabel[s.status] }}</span></td>
+                <td class="whitespace-nowrap">{{ s.at ? t12(s.at) : '—' }}</td>
+                <td>@if (s.lat !== null && s.lng !== null) { <a class="act" [href]="mapUrl(s.lat, s.lng)" target="_blank" rel="noopener">Map</a> } @else { <span class="opacity-50">—</span> }</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="py-8 text-center opacity-70">{{ loading() ? 'Loading…' : 'No check-ins.' }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <div class="line mt-2.5 max-h-[calc(100vh-17rem)] overflow-auto rounded-lg border">
+        <table class="tbl w-full min-w-[480px] text-left text-xs">
+          <thead><tr><th>Signed in at</th><th>Location</th><th>Accuracy</th></tr></thead>
+          <tbody>
+            @for (l of logins(); track l.at) {
+              <tr>
+                <td class="whitespace-nowrap">{{ dt12(l.at) }}</td>
+                <td><a class="act" [href]="mapUrl(l.lat, l.lng)" target="_blank" rel="noopener">Map</a></td>
+                <td>{{ l.accuracy !== null ? '±' + (l.accuracy | number: '1.0-0') + ' m' : '—' }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="3" class="py-8 text-center opacity-70">{{ loading() ? 'Loading…' : 'No captured logins.' }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>

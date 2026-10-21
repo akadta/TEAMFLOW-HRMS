@@ -1,0 +1,18 @@
+:host {
+  display: block;
+  position: relative;
+  z-index: 30; /* keeps the dropdown above the page content */
+}
+
+.icon-btn:hover,
+.menu-item:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.menu-card {
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.divider {
+  border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+}

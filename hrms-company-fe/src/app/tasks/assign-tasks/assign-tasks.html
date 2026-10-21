@@ -1,0 +1,108 @@
+<div class="mx-auto max-w-5xl p-3 sm:p-4"
+     [style.--accent]="brand.theme().accent"
+     [style.--accent-text]="brand.accentText()"
+     [style.--card]="brand.theme().navbar">
+
+  <div>
+    <h1 class="text-lg font-semibold tracking-tight" [style.color]="brand.contentText()">Assign tasks</h1>
+    <p class="text-xs opacity-70" [style.color]="brand.contentText()">Give a task now or schedule it · your own company's people only</p>
+  </div>
+
+  <section class="mt-3 rounded-xl p-3" [style]="brand.navbarStyle()" [style.color]="brand.navbarText()">
+    <div class="line flex w-fit rounded-lg border p-0.5">
+      <button type="button" class="tab" [class.on]="tab() === 'new'" (click)="tab.set('new')">New task</button>
+      <button type="button" class="tab" [class.on]="tab() === 'sent'" (click)="tab.set('sent')">Sent by me ({{ sent().length }})</button>
+    </div>
+
+    @if (tab() === 'new') {
+      @if (ok()) { <p class="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">{{ ok() }}</p> }
+
+      <div class="mt-3 grid gap-4 lg:grid-cols-2">
+        <div>
+          <label class="mb-1 block text-[11px] font-semibold opacity-80">Task name <span style="color:#ef4444">*</span></label>
+          <input class="inp w-full" maxlength="150" [value]="title()" (input)="title.set(val($event))" />
+
+          <label class="mb-1 mt-3 block text-[11px] font-semibold opacity-80">Description <span class="font-normal opacity-70">(optional)</span></label>
+          <textarea class="inp w-full" rows="4" maxlength="4000" [value]="description()" (input)="description.set(val($event))"></textarea>
+
+          <label class="mb-1 mt-3 block text-[11px] font-semibold opacity-80">Finish by (IST, optional)</label>
+          <input class="inp w-full" type="datetime-local" [value]="dueAt()" (input)="dueAt.set(val($event))" />
+
+          <label class="mb-1 mt-3 block text-[11px] font-semibold opacity-80">When to send</label>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" class="chip" [class.on]="when() === 'now'" (click)="when.set('now')">Send now</button>
+            <button type="button" class="chip" [class.on]="when() === 'later'" (click)="when.set('later')">Schedule</button>
+          </div>
+          @if (when() === 'later') { <input class="inp mt-2 w-full" type="datetime-local" [value]="sendAt()" (input)="sendAt.set(val($event))" /> }
+
+          <label class="mb-1 mt-3 block text-[11px] font-semibold opacity-80">Photos, videos, files <span class="font-normal opacity-70">(optional · any size)</span></label>
+          <input class="inp w-full" type="file" multiple (change)="pick($event)" />
+          @for (f of files(); track $index) {
+            <div class="soft mt-1.5 flex items-center gap-2 px-2.5 py-1.5"><p class="min-w-0 flex-1 truncate text-xs">{{ f.name }}</p><span class="text-[11px] opacity-70">{{ fmtSize(f.size) }}</span><button type="button" class="text-[11px] font-semibold" style="color:#ef4444" (click)="files.update(l => l.filter((_, x) => x !== $index))">Remove</button></div>
+          }
+        </div>
+
+        <div>
+          <p class="mb-1 text-[11px] font-semibold opacity-80">Send to ({{ picked().length }} picked)</p>
+          <div class="flex flex-wrap items-center gap-2">
+            <input class="inp w-40" placeholder="Search name / code" [value]="q()" (input)="q.set(val($event))" />
+            <select class="inp" (change)="role.set(val($event))"><option value="">All roles</option>@for (r of roles(); track r) { <option [value]="r" [selected]="r === role()">{{ r }}</option> }</select>
+            <button type="button" class="act" (click)="tickShown()">Tick all shown</button>
+            <button type="button" class="act" (click)="picked.set([])">Clear</button>
+          </div>
+          <div class="line mt-2 max-h-72 space-y-1 overflow-y-auto rounded-lg border p-1.5">
+            @for (p of shownPeople(); track p.userId) {
+              <label class="soft flex items-center gap-2 px-2.5 py-1.5 text-xs"><input type="checkbox" [checked]="picked().includes(p.userId)" (change)="toggle(p.userId)" /><span class="font-semibold">{{ p.name }}</span><span class="opacity-70">{{ p.code }}{{ p.role ? ' · ' + p.role : '' }}</span></label>
+            } @empty { <p class="py-4 text-center text-[11px] opacity-70">No employees you can assign to.</p> }
+          </div>
+        </div>
+      </div>
+
+      @if (error()) { <p class="mt-3 text-xs" style="color:#dc2626">{{ error() }}</p> }
+      <div class="mt-4 flex justify-end">
+        <button type="button" class="btn" [disabled]="busy()" (click)="send()">@if (busy()) { <span class="spin"></span>Sending… } @else { {{ when() === 'later' ? 'Schedule task' : 'Send task now' }} }</button>
+      </div>
+    } @else {
+      <div class="line mt-3 max-h-[calc(100vh-17rem)] overflow-auto rounded-lg border">
+        <table class="tbl w-full min-w-[720px] text-left text-xs">
+          <thead><tr><th>Task</th><th>To</th><th>Send</th><th>Done</th><th>Status</th></tr></thead>
+          <tbody>
+            @for (a of sent(); track a.id) {
+              <tr class="clickable" (click)="sel.set(a)">
+                <td class="max-w-[16rem] truncate font-semibold">{{ a.title }}</td>
+                <td>{{ a.targets.length }} employee(s)</td>
+                <td class="whitespace-nowrap text-[11px]">{{ a.status === 'sent' && a.sentAt ? 'Sent ' + dt12(a.sentAt) : a.sendAt ? dt12(a.sendAt) : 'Immediately' }}</td>
+                <td>{{ done(a) }}/{{ a.targets.length }}</td>
+                <td><span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="AS[a.status].cls">{{ AS[a.status].label }}</span></td>
+              </tr>
+            } @empty { <tr><td colspan="5" class="py-8 text-center opacity-70">{{ sentLoading() ? 'Loading…' : 'Nothing sent yet.' }}</td></tr> }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  @if (sel(); as a) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-3 backdrop-blur-sm" (click)="sel.set(null)">
+      <div class="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl p-4 shadow-2xl" [style.background]="brand.theme().navbar" [style.color]="brand.navbarText()" (click)="$event.stopPropagation()">
+        <div class="flex items-start justify-between gap-2"><h3 class="text-sm font-semibold">{{ a.title }}</h3><span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="AS[a.status].cls">{{ AS[a.status].label }}</span></div>
+        <p class="mt-1 text-[11px] opacity-70">Created {{ dt12(a.createdAt) }} · {{ a.sendAt ? 'send ' + dt12(a.sendAt) : 'sent immediately' }} · due {{ a.dueAt ? dt12(a.dueAt) : '—' }}</p>
+        @if (a.description) { <p class="soft mt-3 whitespace-pre-wrap p-3 text-xs">{{ a.description }}</p> }
+        @if (a.files.length) { <div class="mt-3 space-y-1">@for (f of a.files; track f.filePath) { <a class="soft block truncate px-2.5 py-1.5 text-xs font-medium underline" [href]="fileUrl(f.filePath)" target="_blank" rel="noopener">{{ f.fileName }} ({{ fmtSize(f.size) }})</a> }</div> }
+        <p class="mt-3 text-[11px] font-semibold opacity-80">Employees</p>
+        <div class="mt-1 space-y-1">
+          @for (t of a.targets; track t.userId) {
+            <div class="soft flex items-center gap-2 px-2.5 py-1.5 text-[11px]">
+              <span class="min-w-0 flex-1 truncate font-semibold">{{ t.name }} <span class="font-normal opacity-70">{{ t.code }}</span></span>
+              @if (t.status) { <span class="rounded-full px-2 py-0.5 font-semibold" [class]="TS[t.status].cls">{{ TS[t.status].label }}</span><span>{{ t.progress }}%</span> } @else { <span class="opacity-70">Not sent yet</span> }
+            </div>
+          }
+        </div>
+        <div class="mt-4 flex gap-2">
+          <button type="button" class="act px-4 py-2" (click)="sel.set(null)">Close</button>
+          @if (a.status === 'scheduled') { <button type="button" class="btn btn-block flex-1" style="background:#dc2626;color:#fff" (click)="cancel(a)">Cancel scheduled task</button> }
+        </div>
+      </div>
+    </div>
+  }
+</div>
